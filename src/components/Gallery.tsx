@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext'
 import { useI18n } from '../i18n/I18nContext'
 import { Project, ProjectStatus } from '../types'
 import BrushDivider from './BrushDivider'
+import StorageStatus from './StorageStatus'
 import {
   IconCopy,
   IconImage,
@@ -122,6 +123,8 @@ export default function Gallery({ onOpen }: Props) {
           ))}
         </div>
       )}
+
+      <StorageStatus />
     </div>
   )
 }

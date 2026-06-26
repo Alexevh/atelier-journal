@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useApp } from './context/AppContext'
 import { useI18n } from './i18n/I18nContext'
+import { ensurePersistentStorage } from './utils/persistence'
 import TopBar from './components/TopBar'
 import Gallery from './components/Gallery'
 import ProjectEditor from './components/ProjectEditor'
@@ -10,6 +11,11 @@ export default function App() {
   const { ready, toasts, dismissToast, getProject } = useApp()
   const { t } = useI18n()
   const [activeId, setActiveId] = useState<string | null>(null)
+
+  // ask the browser to keep our local data safe from automatic eviction
+  useEffect(() => {
+    ensurePersistentStorage()
+  }, [])
 
   // keep the URL hash in sync so reloads & back-button feel natural
   useEffect(() => {

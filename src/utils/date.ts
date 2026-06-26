@@ -11,3 +11,15 @@ export function formatLongDate(iso: string): string {
     year: 'numeric',
   })
 }
+
+/** Whole-days difference, then a localized "2 days ago" / "hace 2 días". */
+export function formatRelativeDays(timestamp: number): string {
+  const days = Math.round((timestamp - Date.now()) / 86_400_000)
+  const rtf = new Intl.RelativeTimeFormat(dateLocale(), { numeric: 'auto' })
+  return rtf.format(days, 'day')
+}
+
+/** Days elapsed since a timestamp (>= 0). */
+export function daysSince(timestamp: number): number {
+  return Math.floor((Date.now() - timestamp) / 86_400_000)
+}

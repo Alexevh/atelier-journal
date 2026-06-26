@@ -269,6 +269,24 @@ const es: Dict = {
   'pdf.cert.contact': 'CONTACTO',
   'pdf.cert.issued': 'Emitido el {date}',
 
+  // storage / backup
+  'storage.heading': 'Tus datos',
+  'storage.localOnly': 'Todo se guarda únicamente en este dispositivo.',
+  'storage.used': '{size} en uso',
+  'storage.protected': 'Almacenamiento protegido',
+  'storage.protectedHint': 'El navegador no borrará estos datos automáticamente.',
+  'storage.notProtected': 'Sin protección persistente',
+  'storage.notProtectedHint':
+    'El navegador podría borrar los datos si falta espacio. Instalá la app o respaldá seguido.',
+  'storage.lastBackup': 'Último respaldo {when}',
+  'storage.neverBackup': 'Todavía no hiciste ningún respaldo',
+  'storage.backupNow': 'Respaldar ahora',
+  'storage.reminder':
+    'Hace {days} días que no respaldás tu archivo. Exportá un JSON para no perder tu trabajo.',
+  'storage.reminderNever':
+    'Aún no respaldaste tu archivo. Como los datos viven solo en este dispositivo, exportá un JSON de seguridad.',
+  'storage.dismiss': 'Entendido',
+
   // factory defaults (stored)
   'default.title': 'Obra sin título',
   'default.technique': 'Óleo sobre lienzo',
@@ -516,6 +534,23 @@ const en: Dict = {
   'pdf.cert.artist': 'ARTIST',
   'pdf.cert.contact': 'CONTACT',
   'pdf.cert.issued': 'Issued {date}',
+
+  'storage.heading': 'Your data',
+  'storage.localOnly': 'Everything is stored only on this device.',
+  'storage.used': '{size} in use',
+  'storage.protected': 'Storage protected',
+  'storage.protectedHint': 'The browser will not clear this data automatically.',
+  'storage.notProtected': 'Not persistently stored',
+  'storage.notProtectedHint':
+    'The browser may clear data under disk pressure. Install the app or back up often.',
+  'storage.lastBackup': 'Last backup {when}',
+  'storage.neverBackup': "You haven't made a backup yet",
+  'storage.backupNow': 'Back up now',
+  'storage.reminder':
+    "It's been {days} days since your last backup. Export a JSON so you don't lose your work.",
+  'storage.reminderNever':
+    "You haven't backed up yet. Since data lives only on this device, export a safety JSON.",
+  'storage.dismiss': 'Got it',
 
   'default.title': 'Untitled Work',
   'default.technique': 'Oil on canvas',
