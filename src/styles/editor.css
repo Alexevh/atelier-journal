@@ -510,6 +510,36 @@
   font-size: 0.8rem;
 }
 
+.sync-indicator {
+  position: relative;
+}
+.sync-indicator-dot {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--faint);
+  border: 1.5px solid var(--paper);
+}
+.sync-indicator.sync-synced .sync-indicator-dot {
+  background: #5a7d54;
+}
+.sync-indicator.sync-syncing .sync-indicator-dot,
+.sync-indicator.sync-connecting .sync-indicator-dot {
+  background: var(--gold);
+  animation: pulse 1.2s var(--ease) infinite;
+}
+.sync-indicator.sync-offline .sync-indicator-dot,
+.sync-indicator.sync-error .sync-indicator-dot {
+  background: var(--accent);
+}
+.sync-indicator.sync-signed_out .sync-indicator-dot,
+.sync-indicator.sync-unconfigured .sync-indicator-dot {
+  background: var(--gold-soft);
+}
+
 .setup-steps {
   margin: 0 0 1rem;
   padding-left: 1.3rem;

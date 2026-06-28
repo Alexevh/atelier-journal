@@ -1,10 +1,12 @@
 import { useRef } from 'react'
 import { useApp } from '../context/AppContext'
+import { useSync } from '../context/SyncContext'
 import { useTheme } from '../context/ThemeContext'
 import { useI18n } from '../i18n/I18nContext'
 import { LANGUAGES, Lang } from '../i18n'
 import { exportLibrary, parseImport, readFileAsText } from '../utils/transfer'
 import {
+  IconCloud,
   IconDownload,
   IconMoon,
   IconPalette,
@@ -22,6 +24,7 @@ export default function TopBar({ onHome, onSettings }: Props) {
   const { theme, toggle } = useTheme()
   const { lang, setLang, t } = useI18n()
   const { projects, importProjects, notify } = useApp()
+  const sync = useSync()
   const importRef = useRef<HTMLInputElement>(null)
 
   const handleImport = async (file: File) => {
@@ -88,6 +91,27 @@ export default function TopBar({ onHome, onSettings }: Props) {
       >
         <IconDownload size={16} /> <span className="hide-sm">{t('common.exportAll')}</span>
       </button>
+
+      {sync.enabled && (
+        <button
+          className={`btn btn-icon sync-indicator sync-${sync.status}`}
+          onClick={() => {
+            if (sync.active) {
+              sync.syncNow()
+              notify(t('sync.status.syncing'), 'info')
+            } else {
+              onSettings()
+            }
+          }}
+          title={`${t('sync.statusLabel')}: ${t(`sync.status.${sync.status}`)}${
+            sync.active ? ' · ' + t('sync.now') : ''
+          }`}
+          aria-label={t('sync.statusLabel')}
+        >
+          <IconCloud size={18} />
+          <span className="sync-indicator-dot" />
+        </button>
+      )}
 
       <div className="lang-switch" role="group" aria-label={t('topbar.language')}>
         {LANGUAGES.map((l) => (

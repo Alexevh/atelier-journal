@@ -20,8 +20,11 @@ interface SyncCtx {
   error: string | null
   configured: boolean
   enabled: boolean
+  /** True once signed in and the engine is live (can sync now). */
+  active: boolean
   signIn: () => Promise<void>
   signOut: () => Promise<void>
+  syncNow: () => Promise<void>
 }
 
 const Ctx = createContext<SyncCtx | null>(null)
@@ -309,9 +312,30 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     setStatus(enabled && configured ? 'signed_out' : enabled ? 'unconfigured' : 'disabled')
   }, [enabled, configured])
 
+  const syncNow = useCallback(async () => {
+    if (!activeRef.current) return
+    setStatus('syncing')
+    setError(null)
+    try {
+      const fb = await import('../sync/firebase')
+      remoteRef.current = await fb.pullAll()
+      await reconcile()
+      await pushLocalChanges()
+      if (activeRef.current) setStatus('synced')
+    } catch (err) {
+      if (!navigator.onLine) setStatus('offline')
+      else {
+        setStatus('error')
+        setError(err instanceof Error ? err.message : String(err))
+      }
+    }
+  }, [reconcile, pushLocalChanges])
+
+  const active = status === 'synced' || status === 'syncing' || status === 'offline'
+
   const value = useMemo<SyncCtx>(
-    () => ({ status, email, error, configured, enabled, signIn, signOut }),
-    [status, email, error, configured, enabled, signIn, signOut],
+    () => ({ status, email, error, configured, enabled, active, signIn, signOut, syncNow }),
+    [status, email, error, configured, enabled, active, signIn, signOut, syncNow],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

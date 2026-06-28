@@ -322,6 +322,13 @@ export default function Settings({ onBack }: Props) {
                   <span className="chip">
                     <IconShield size={14} /> {t('sync.signedInAs', { email: sync.email })}
                   </span>
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => sync.syncNow()}
+                    disabled={!sync.active}
+                  >
+                    <IconCloud size={15} /> {t('sync.now')}
+                  </button>
                   <button className="btn btn-sm" onClick={() => sync.signOut()}>
                     {t('sync.signOut')}
                   </button>
