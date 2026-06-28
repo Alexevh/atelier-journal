@@ -8,15 +8,17 @@ import {
   IconDownload,
   IconMoon,
   IconPalette,
+  IconSettings,
   IconSun,
   IconUpload,
 } from './Icons'
 
 interface Props {
   onHome: () => void
+  onSettings: () => void
 }
 
-export default function TopBar({ onHome }: Props) {
+export default function TopBar({ onHome, onSettings }: Props) {
   const { theme, toggle } = useTheme()
   const { lang, setLang, t } = useI18n()
   const { projects, importProjects, notify } = useApp()
@@ -108,6 +110,14 @@ export default function TopBar({ onHome }: Props) {
         aria-label={theme === 'light' ? t('topbar.toDark') : t('topbar.toLight')}
       >
         {theme === 'light' ? <IconMoon size={18} /> : <IconSun size={18} />}
+      </button>
+      <button
+        className="btn btn-icon"
+        onClick={onSettings}
+        title={t('settings.open')}
+        aria-label={t('settings.open')}
+      >
+        <IconSettings size={18} />
       </button>
     </header>
   )

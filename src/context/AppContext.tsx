@@ -28,6 +28,14 @@ interface AppCtx {
   duplicateProject: (id: string) => Project | undefined
   importProjects: (projects: Project[]) => void
   getProject: (id: string) => Project | undefined
+  /**
+   * Replace the whole project set verbatim — used by the sync engine to apply a
+   * reconciled/remote state. Unlike updateProject it does NOT bump updatedAt, so
+   * remote timestamps are preserved and no push feedback loop is created.
+   */
+  applyRemoteState: (projects: Project[]) => void
+  /** Wipe all local projects (settings untouched). */
+  clearAllProjects: () => void
   notify: (message: string, tone?: Toast['tone']) => void
   toasts: Toast[]
   dismissToast: (id: string) => void
@@ -124,6 +132,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setProjects((prev) => [...incoming, ...prev])
   }, [])
 
+  const applyRemoteState = useCallback((next: Project[]) => {
+    setProjects(next)
+  }, [])
+
+  const clearAllProjects = useCallback(() => {
+    setProjects([])
+  }, [])
+
   const getProject = useCallback(
     (id: string) => projects.find((p) => p.id === id),
     [projects],
@@ -139,6 +155,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       duplicateProject,
       importProjects,
       getProject,
+      applyRemoteState,
+      clearAllProjects,
       notify,
       toasts,
       dismissToast,
@@ -152,6 +170,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       duplicateProject,
       importProjects,
       getProject,
+      applyRemoteState,
+      clearAllProjects,
       notify,
       toasts,
       dismissToast,

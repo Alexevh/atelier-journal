@@ -5,12 +5,26 @@ import { ensurePersistentStorage } from './utils/persistence'
 import TopBar from './components/TopBar'
 import Gallery from './components/Gallery'
 import ProjectEditor from './components/ProjectEditor'
+import Settings from './components/Settings'
 import { IconClose } from './components/Icons'
+
+type Route =
+  | { kind: 'gallery' }
+  | { kind: 'work'; id: string }
+  | { kind: 'settings' }
+
+function parseHash(): Route {
+  const h = window.location.hash
+  const work = h.match(/^#\/work\/(.+)$/)
+  if (work) return { kind: 'work', id: decodeURIComponent(work[1]) }
+  if (h === '#/settings') return { kind: 'settings' }
+  return { kind: 'gallery' }
+}
 
 export default function App() {
   const { ready, toasts, dismissToast, getProject } = useApp()
   const { t } = useI18n()
-  const [activeId, setActiveId] = useState<string | null>(null)
+  const [route, setRoute] = useState<Route>(() => parseHash())
 
   // ask the browser to keep our local data safe from automatic eviction
   useEffect(() => {
@@ -19,23 +33,21 @@ export default function App() {
 
   // keep the URL hash in sync so reloads & back-button feel natural
   useEffect(() => {
-    const fromHash = () => {
-      const m = window.location.hash.match(/^#\/work\/(.+)$/)
-      setActiveId(m ? decodeURIComponent(m[1]) : null)
-    }
-    fromHash()
-    window.addEventListener('hashchange', fromHash)
-    return () => window.removeEventListener('hashchange', fromHash)
+    const onHash = () => setRoute(parseHash())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
   const open = (id: string) => {
     window.location.hash = `#/work/${encodeURIComponent(id)}`
-    setActiveId(id)
     window.scrollTo({ top: 0 })
   }
   const home = () => {
     window.location.hash = ''
-    setActiveId(null)
+  }
+  const openSettings = () => {
+    window.location.hash = '#/settings'
+    window.scrollTo({ top: 0 })
   }
 
   if (!ready) {
@@ -46,14 +58,16 @@ export default function App() {
     )
   }
 
-  const activeProject = activeId ? getProject(activeId) : undefined
+  const activeProject = route.kind === 'work' ? getProject(route.id) : undefined
 
   return (
     <div className="app-shell">
-      <TopBar onHome={home} />
+      <TopBar onHome={home} onSettings={openSettings} />
       <main className="page">
-        {activeId && activeProject ? (
-          <ProjectEditor projectId={activeId} onBack={home} />
+        {route.kind === 'work' && activeProject ? (
+          <ProjectEditor projectId={route.id} onBack={home} />
+        ) : route.kind === 'settings' ? (
+          <Settings onBack={home} />
         ) : (
           <Gallery onOpen={open} />
         )}

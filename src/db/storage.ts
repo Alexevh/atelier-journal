@@ -1,4 +1,4 @@
-import { AppData, APP_DATA_VERSION, Project } from '../types'
+import { AppData, APP_DATA_VERSION, AppSettings, Project } from '../types'
 
 // A tiny promise-based IndexedDB wrapper. Falls back to localStorage when
 // IndexedDB is unavailable (private mode on some browsers). Both keep all data
@@ -7,7 +7,9 @@ import { AppData, APP_DATA_VERSION, Project } from '../types'
 const DB_NAME = 'atelier-journal'
 const STORE = 'kv'
 const DATA_KEY = 'app-data'
+const SETTINGS_KEY = 'app-settings'
 const LS_KEY = 'atelier-journal-data'
+const LS_SETTINGS_KEY = 'atelier-journal-settings'
 
 let dbPromise: Promise<IDBDatabase> | null = null
 
@@ -105,6 +107,49 @@ export async function saveData(data: AppData): Promise<void> {
   } catch (err) {
     console.error('Failed to persist data', err)
     throw err
+  }
+}
+
+// ---- Settings ------------------------------------------------------------
+// Settings live alongside the data, also strictly on-device.
+
+export async function loadSettings(): Promise<Partial<AppSettings> | null> {
+  try {
+    if (hasIndexedDB()) {
+      const s = await idbGet<Partial<AppSettings>>(SETTINGS_KEY)
+      if (s) return s
+      const legacy = localStorage.getItem(LS_SETTINGS_KEY)
+      if (legacy) {
+        const parsed = JSON.parse(legacy) as Partial<AppSettings>
+        await idbSet(SETTINGS_KEY, parsed)
+        return parsed
+      }
+      return null
+    }
+  } catch (err) {
+    console.warn('IndexedDB settings load failed, falling back to localStorage', err)
+  }
+  try {
+    const legacy = localStorage.getItem(LS_SETTINGS_KEY)
+    return legacy ? (JSON.parse(legacy) as Partial<AppSettings>) : null
+  } catch {
+    return null
+  }
+}
+
+export async function saveSettings(settings: AppSettings): Promise<void> {
+  try {
+    if (hasIndexedDB()) {
+      await idbSet(SETTINGS_KEY, settings)
+      return
+    }
+  } catch (err) {
+    console.warn('IndexedDB settings save failed, falling back to localStorage', err)
+  }
+  try {
+    localStorage.setItem(LS_SETTINGS_KEY, JSON.stringify(settings))
+  } catch (err) {
+    console.error('Failed to persist settings', err)
   }
 }
 

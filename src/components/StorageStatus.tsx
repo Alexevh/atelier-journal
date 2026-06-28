@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { useSettings } from '../context/SettingsContext'
 import { useI18n } from '../i18n/I18nContext'
 import { daysSince, formatRelativeDays } from '../utils/date'
 import {
@@ -11,14 +12,13 @@ import {
 import { exportLibrary, getLastExport } from '../utils/transfer'
 import { IconDatabase, IconDownload, IconShield } from './Icons'
 
-const REMIND_AFTER_DAYS = 14
-
 /**
  * A quiet studio-footer panel: how much space the archive uses, whether the
  * browser is keeping it safe, and a gentle nudge to export a backup.
  */
 export default function StorageStatus() {
   const { projects, notify } = useApp()
+  const { settings } = useSettings()
   const { t } = useI18n()
   const [info, setInfo] = useState<StorageInfo | null>(null)
   const [lastExport, setLastExport] = useState<number | null>(getLastExport())
@@ -47,7 +47,7 @@ export default function StorageStatus() {
 
   const overdue =
     !dismissed &&
-    (lastExport === null || daysSince(lastExport) >= REMIND_AFTER_DAYS)
+    (lastExport === null || daysSince(lastExport) >= settings.backupReminderDays)
 
   return (
     <>

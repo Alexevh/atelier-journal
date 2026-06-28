@@ -109,3 +109,60 @@ export interface AppData {
 }
 
 export const APP_DATA_VERSION = 1
+
+// ---- Settings & optional cloud sync --------------------------------------
+
+/** Public Firebase web config — pasted by the user (BYO project). Not secret. */
+export interface FirebaseConfig {
+  apiKey: string
+  authDomain: string
+  projectId: string
+  storageBucket: string
+  messagingSenderId: string
+  appId: string
+}
+
+export interface SyncSettings {
+  /** Master switch. When false, the app is 100% local and Firebase never loads. */
+  enabled: boolean
+  provider: 'firebase'
+  firebaseConfig: FirebaseConfig | null
+}
+
+export interface AppSettings {
+  // Artist identity — used to prefill new projects, certificates and PDFs.
+  artistName: string
+  artistContact: string
+  artistLogo?: StoredImage
+  artistSignature?: StoredImage
+  // Default texts applied to new works.
+  defaultTechnique: string
+  defaultAuthenticityText: string
+  defaultMaterialsSummary: string
+  // Backup reminder cadence, in days.
+  backupReminderDays: number
+  // Optional cloud sync.
+  sync: SyncSettings
+}
+
+export const SETTINGS_VERSION = 1
+
+/**
+ * Sync lifecycle states surfaced to the UI. Local-first always holds: none of
+ * these ever block reading/writing the local store.
+ */
+export type SyncStatus =
+  | 'disabled' // sync turned off
+  | 'unconfigured' // enabled but no Firebase config yet
+  | 'signed_out' // configured, waiting for Google sign-in
+  | 'connecting' // initialising firebase / signing in
+  | 'syncing' // a reconcile/transfer is in progress
+  | 'synced' // up to date and listening
+  | 'offline' // no network; will resume on reconnect
+  | 'error' // misconfiguration or failure (details in message)
+
+/** A deletion marker so removing a work on one device propagates to others. */
+export interface Tombstone {
+  id: string
+  deletedAt: number
+}

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { useSettings } from '../context/SettingsContext'
 import { useI18n } from '../i18n/I18nContext'
+import { newProjectWithDefaults } from '../utils/factory'
 import { Project, ProjectStatus } from '../types'
 import BrushDivider from './BrushDivider'
 import StorageStatus from './StorageStatus'
@@ -20,6 +22,7 @@ type Filter = 'all' | ProjectStatus
 
 export default function Gallery({ onOpen }: Props) {
   const { projects, addProject, duplicateProject, deleteProject, notify } = useApp()
+  const { settings } = useSettings()
   const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
@@ -46,7 +49,7 @@ export default function Gallery({ onOpen }: Props) {
   }, [projects, query, filter])
 
   const handleNew = () => {
-    const p = addProject()
+    const p = addProject(newProjectWithDefaults(settings))
     onOpen(p.id)
   }
 
