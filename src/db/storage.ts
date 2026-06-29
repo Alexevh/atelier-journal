@@ -154,32 +154,42 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
 }
 
 // ---- Backups -------------------------------------------------------------
+// Rolling automatic backups live in IndexedDB. They were previously kept in
+// localStorage, but full snapshots include base64 images and quickly blew the
+// ~5 MB localStorage quota. IndexedDB has a far larger budget.
 
-const BACKUP_KEY = 'atelier-journal-backups'
-const MAX_BACKUPS = 5
+const BACKUP_KEY = 'app-backups'
+const LEGACY_BACKUP_KEY = 'atelier-journal-backups'
+const MAX_BACKUPS = 3
 
 interface Backup {
   timestamp: number
   data: AppData
 }
 
-/** Rolling automatic backups, kept lightweight in localStorage. */
 export async function pushBackup(data: AppData): Promise<void> {
+  // Remove the old localStorage backups that caused quota errors.
   try {
-    const existing: Backup[] = JSON.parse(localStorage.getItem(BACKUP_KEY) || '[]')
+    localStorage.removeItem(LEGACY_BACKUP_KEY)
+  } catch {
+    /* ignore */
+  }
+  try {
+    if (!hasIndexedDB()) return // skip backups entirely without IndexedDB
+    const existing = (await idbGet<Backup[]>(BACKUP_KEY)) ?? []
     existing.unshift({ timestamp: Date.now(), data })
-    const trimmed = existing.slice(0, MAX_BACKUPS)
-    localStorage.setItem(BACKUP_KEY, JSON.stringify(trimmed))
+    await idbSet(BACKUP_KEY, existing.slice(0, MAX_BACKUPS))
   } catch (err) {
     // Backups are best-effort; never block the main save.
-    console.warn('Backup failed (likely storage quota)', err)
+    console.warn('Backup skipped', err)
   }
 }
 
-export function listBackups(): Backup[] {
+export async function listBackups(): Promise<Backup[]> {
   try {
-    return JSON.parse(localStorage.getItem(BACKUP_KEY) || '[]')
+    if (hasIndexedDB()) return (await idbGet<Backup[]>(BACKUP_KEY)) ?? []
   } catch {
-    return []
+    /* ignore */
   }
+  return []
 }
