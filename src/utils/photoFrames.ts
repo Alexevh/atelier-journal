@@ -88,6 +88,41 @@ export const PHOTO_FRAMES: PhotoFrame[] = [
     insets: { l: 0.03, t: 0.026, r: 0.028, b: 0.026 },
     scale: 0.035,
   },
+  {
+    id: 'real-374',
+    nameKey: 'frame.r.louisXV',
+    file: 'sk-l-374.jpg',
+    insets: { l: 0.2261, t: 0.198, r: 0.2124, b: 0.1859 },
+    scale: 0.2,
+  },
+  {
+    id: 'real-2054',
+    nameKey: 'frame.r.louisXIII',
+    file: 'sk-l-2054.jpg',
+    insets: { l: 0.15, t: 0.128, r: 0.145, b: 0.168 },
+    scale: 0.16,
+  },
+  {
+    id: 'real-1714',
+    nameKey: 'frame.r.openworkGold',
+    file: 'sk-l-1714.jpg',
+    insets: { l: 0.0728, t: 0.0765, r: 0.0717, b: 0.0718 },
+    scale: 0.085,
+  },
+  {
+    id: 'real-6754',
+    nameKey: 'frame.r.veneer',
+    file: 'sk-l-6754.jpg',
+    insets: { l: 0.1392, t: 0.1208, r: 0.1941, b: 0.1517 },
+    scale: 0.17,
+  },
+  {
+    id: 'real-6897',
+    nameKey: 'frame.r.modernGallery',
+    file: 'sk-l-6897.jpg',
+    insets: { l: 0.198, t: 0.153, r: 0.211, b: 0.22 },
+    scale: 0.22,
+  },
 ]
 
 function loadImage(src: string): Promise<HTMLImageElement> {

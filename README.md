@@ -103,10 +103,11 @@ The Framing Studio offers two kinds of frames:
 
 - **Procedural frames** — drawn entirely on a canvas (mouldings, gilt, wood
   grain, mats, ornaments). No external assets.
-- **Real frames** — photographs of antique frames from the **Rijksmuseum**
-  collection (objects RP-L-513, 514, 515, 517, 525 and 534), released as
-  **CC0/public domain** and obtained via Wikimedia Commons. They are bundled
-  under `public/frames/` and adapted to any artwork aspect ratio with 9-slice
+- **Real frames** — photographs of antique and modern frames from the
+  **Rijksmuseum** collection (objects RP-L-513, 514, 515, 517, 525, 530, 534,
+  579, 580 and SK-L-374, 1714, 2054, 6754, 6897), released as **CC0/public
+  domain** and obtained via Wikimedia Commons. They are bundled under
+  `public/frames/` and adapted to any artwork aspect ratio with 9-slice
   scaling (rigid corners, stretched edges). CC0 requires no attribution, but
   credit where credit is due: thank you, Rijksmuseum.
 
