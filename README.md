@@ -97,6 +97,19 @@ rules. In short:
 > On the free Spark plan you cannot incur charges: exceeding a quota simply
 > blocks operations until it resets (and the app keeps working locally).
 
+## Frame Studio assets
+
+The Framing Studio offers two kinds of frames:
+
+- **Procedural frames** — drawn entirely on a canvas (mouldings, gilt, wood
+  grain, mats, ornaments). No external assets.
+- **Real frames** — photographs of antique frames from the **Rijksmuseum**
+  collection (objects RP-L-513, 514, 515, 517, 525 and 534), released as
+  **CC0/public domain** and obtained via Wikimedia Commons. They are bundled
+  under `public/frames/` and adapted to any artwork aspect ratio with 9-slice
+  scaling (rigid corners, stretched edges). CC0 requires no attribution, but
+  credit where credit is due: thank you, Rijksmuseum.
+
 ## Tech
 
 - React 18 + TypeScript, built with Vite

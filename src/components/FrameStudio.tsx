@@ -9,9 +9,14 @@ import {
   randomFrameSpec,
   renderFramedImage,
 } from '../utils/frames'
+import { PHOTO_FRAMES, PhotoFrame, renderPhotoFramedImage } from '../utils/photoFrames'
 import { IconClose, IconDownload, IconImage, IconUpload } from './Icons'
 
 const DEFAULT_MAT = { width: 0.06, color: '#f6f2e7' }
+
+type Selection =
+  | { kind: 'spec'; id: string; spec: FrameSpec }
+  | { kind: 'photo'; frame: PhotoFrame }
 
 interface Props {
   image?: StoredImage
@@ -30,17 +35,23 @@ function fileSafe(s: string): string {
 export default function FrameStudio({ image, title, onClose }: Props) {
   const { t } = useI18n()
   const [photo, setPhoto] = useState<StoredImage | undefined>(image)
-  const [presetId, setPresetId] = useState(FRAME_PRESETS[0].id)
-  const [baseSpec, setBaseSpec] = useState<FrameSpec>(FRAME_PRESETS[0].spec)
+  const [selection, setSelection] = useState<Selection>({
+    kind: 'spec',
+    id: FRAME_PRESETS[0].id,
+    spec: FRAME_PRESETS[0].spec,
+  })
   const [matOn, setMatOn] = useState<boolean>(!!FRAME_PRESETS[0].spec.mat)
   const [busy, setBusy] = useState(false)
 
   // the mat toggle overrides whatever the preset/random roll came with
-  const spec = useMemo<FrameSpec>(() => {
-    if (matOn && !baseSpec.mat) return { ...baseSpec, mat: DEFAULT_MAT }
-    if (!matOn && baseSpec.mat) return { ...baseSpec, mat: undefined }
-    return baseSpec
-  }, [baseSpec, matOn])
+  const effective = useMemo(() => {
+    if (selection.kind === 'photo') return selection
+    const base = selection.spec
+    let spec = base
+    if (matOn && !base.mat) spec = { ...base, mat: DEFAULT_MAT }
+    else if (!matOn && base.mat) spec = { ...base, mat: undefined }
+    return { ...selection, spec }
+  }, [selection, matOn])
   const holderRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
@@ -55,12 +66,18 @@ export default function FrameStudio({ image, title, onClose }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  // re-render the framed preview whenever photo or spec changes
+  // re-render the framed preview whenever photo or frame selection changes
   useEffect(() => {
     if (!photo) return
     const seq = ++renderSeq.current
     setBusy(true)
-    renderFramedImage(photo.dataUrl, spec)
+    const job =
+      effective.kind === 'photo'
+        ? renderPhotoFramedImage(photo.dataUrl, effective.frame, {
+            mat: matOn ? DEFAULT_MAT : undefined,
+          })
+        : renderFramedImage(photo.dataUrl, effective.spec)
+    job
       .then((canvas) => {
         if (seq !== renderSeq.current) return // superseded by a newer render
         canvasRef.current = canvas
@@ -75,26 +92,32 @@ export default function FrameStudio({ image, title, onClose }: Props) {
       .finally(() => {
         if (seq === renderSeq.current) setBusy(false)
       })
-  }, [photo, spec])
+  }, [photo, effective, matOn])
 
   const pickFile = useCallback(async (file: File | undefined) => {
     if (!file) return
     setPhoto(await processImageFile(file))
   }, [])
 
+  const selectedId =
+    effective.kind === 'photo' ? effective.frame.id : effective.id
+
   const applyPreset = (id: string) => {
     const preset = FRAME_PRESETS.find((p) => p.id === id)
     if (preset) {
-      setPresetId(id)
-      setBaseSpec(preset.spec)
+      setSelection({ kind: 'spec', id, spec: preset.spec })
       setMatOn(!!preset.spec.mat)
     }
   }
 
+  const applyPhotoFrame = (frame: PhotoFrame) => {
+    setSelection({ kind: 'photo', frame })
+    setMatOn(false)
+  }
+
   const rollRandom = () => {
-    setPresetId('')
     const rolled = randomFrameSpec()
-    setBaseSpec(rolled)
+    setSelection({ kind: 'spec', id: '', spec: rolled })
     setMatOn(!!rolled.mat)
   }
 
@@ -177,10 +200,21 @@ export default function FrameStudio({ image, title, onClose }: Props) {
           {t('frame.mat')}
         </button>
         <span className="frame-chip-sep" />
+        {PHOTO_FRAMES.map((f) => (
+          <button
+            key={f.id}
+            className={`frame-chip frame-chip-real ${selectedId === f.id ? 'active' : ''}`}
+            onClick={() => applyPhotoFrame(f)}
+            title={t('frame.realHint')}
+          >
+            ★ {t(f.nameKey)}
+          </button>
+        ))}
+        {PHOTO_FRAMES.length > 0 && <span className="frame-chip-sep" />}
         {FRAME_PRESETS.map((p) => (
           <button
             key={p.id}
-            className={`frame-chip ${presetId === p.id ? 'active' : ''}`}
+            className={`frame-chip ${selectedId === p.id ? 'active' : ''}`}
             onClick={() => applyPreset(p.id)}
           >
             {t(p.nameKey)}
