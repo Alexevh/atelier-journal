@@ -189,6 +189,25 @@ const es: Dict = {
   'sort.title': 'Título (A–Z)',
   'sort.year': 'Año',
 
+  // frame studio
+  'frame.title': 'Taller de Enmarcado',
+  'frame.open': 'Enmarcar',
+  'frame.takePhoto': 'Tomar foto',
+  'frame.uploadPhoto': 'Subir foto',
+  'frame.download': 'Descargar',
+  'frame.random': 'Marco aleatorio',
+  'frame.empty': 'Tomá una foto de tu cuadro o subí una imagen para enmarcarla.',
+  'frame.exportTitle': 'Foto enmarcada',
+  'frame.exportText': 'Fotografiá tu cuadro y probalo con marcos clásicos o aleatorios.',
+  'frame.p.goldClassic': 'Dorado clásico',
+  'frame.p.baroque': 'Barroco ornamentado',
+  'frame.p.walnut': 'Nogal oscuro',
+  'frame.p.oak': 'Roble cálido',
+  'frame.p.galleryWhite': 'Galería blanca',
+  'frame.p.museumBlack': 'Museo negro',
+  'frame.p.silver': 'Plata envejecida',
+  'frame.p.linen': 'Lino y oro',
+
   // social card
   'export.socialTitle': 'Tarjeta para redes',
   'export.socialText': 'Una imagen cuadrada lista para Instagram con tu obra.',
@@ -565,6 +584,25 @@ const en: Dict = {
   'sort.created': 'Recently created',
   'sort.title': 'Title (A–Z)',
   'sort.year': 'Year',
+
+  // frame studio
+  'frame.title': 'Framing Studio',
+  'frame.open': 'Frame it',
+  'frame.takePhoto': 'Take photo',
+  'frame.uploadPhoto': 'Upload photo',
+  'frame.download': 'Download',
+  'frame.random': 'Random frame',
+  'frame.empty': 'Take a photo of your painting or upload an image to frame it.',
+  'frame.exportTitle': 'Framed photo',
+  'frame.exportText': 'Photograph your painting and try classic or random frames on it.',
+  'frame.p.goldClassic': 'Classic gold',
+  'frame.p.baroque': 'Ornate baroque',
+  'frame.p.walnut': 'Dark walnut',
+  'frame.p.oak': 'Warm oak',
+  'frame.p.galleryWhite': 'Gallery white',
+  'frame.p.museumBlack': 'Museum black',
+  'frame.p.silver': 'Aged silver',
+  'frame.p.linen': 'Linen & gold',
 
   // social card
   'export.socialTitle': 'Social card',

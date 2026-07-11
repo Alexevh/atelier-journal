@@ -7,6 +7,7 @@ import {
   brushDivider,
   drawFittedImage,
   drawWatermark,
+  fitInBox,
   formatLongDate,
   setDraw,
   setFill,
@@ -66,8 +67,8 @@ export async function buildMonograph(project: Project): Promise<jsPDF> {
 
   brushDivider(doc, A4.w / 2 - 30, 47, 60, PALETTE.gold)
 
-  // cover image (final artwork preferred)
-  const cover = project.finalImage || project.referenceImage
+  // cover image (final artwork preferred; skip images whose data is missing)
+  const cover = [project.finalImage, project.referenceImage].find((i) => i?.dataUrl)
   if (cover) {
     await drawFittedImage(doc, cover.dataUrl, MARGIN, 58, contentW, 150, { frame: true })
   }
@@ -141,17 +142,19 @@ export async function buildMonograph(project: Project): Promise<jsPDF> {
   brushDivider(doc, MARGIN, y, contentW)
   y += 10
 
-  // reference + final side by side
+  // reference + final side by side (skip images whose data is missing)
   const half = (contentW - 8) / 2
-  if (project.referenceImage || project.finalImage) {
+  const refImg = project.referenceImage?.dataUrl ? project.referenceImage : undefined
+  const finImg = project.finalImage?.dataUrl ? project.finalImage : undefined
+  if (refImg || finImg) {
     const top = y
-    if (project.referenceImage) {
+    if (refImg) {
       caption(doc, t('pdf.reference'), MARGIN, top)
-      await drawFittedImage(doc, project.referenceImage.dataUrl, MARGIN, top + 4, half, 95, { frame: true })
+      await drawFittedImage(doc, refImg.dataUrl, MARGIN, top + 4, half, 95, { frame: true })
     }
-    if (project.finalImage) {
+    if (finImg) {
       caption(doc, t('pdf.finalArtwork'), MARGIN + half + 8, top)
-      await drawFittedImage(doc, project.finalImage.dataUrl, MARGIN + half + 8, top + 4, half, 95, { frame: true })
+      await drawFittedImage(doc, finImg.dataUrl, MARGIN + half + 8, top + 4, half, 95, { frame: true })
     }
     y = top + 105
   }
@@ -224,21 +227,22 @@ export async function buildMonograph(project: Project): Promise<jsPDF> {
       y += dl.length * 5.4 + 4
     }
 
-    // photographs — large, stacked
-    for (const img of entry.images) {
-      ensure(80)
-      const r = await drawFittedImage(doc, img.dataUrl, MARGIN, y, contentW, 110, { frame: true })
+    // photographs — large, stacked (skip images whose data failed to sync)
+    for (const img of entry.images.filter((i) => i.dataUrl)) {
+      const fit = await fitInBox(img.dataUrl, contentW, 110)
+      ensure(fit.h + 10)
+      const r = await drawFittedImage(doc, img.dataUrl, MARGIN, y, contentW, fit.h, { frame: true })
       y = r.y + r.h + 8
     }
 
     // artistic notes (optional)
     if (opts.includeNotes && entry.notes.length) {
       for (const note of entry.notes) {
-        ensure(26)
         const noteText = note.text
         const label = note.category ? t(`note.${note.category}`) : t('pdf.atelierNote')
         const lines = doc.splitTextToSize(noteText, contentW - 16)
         const boxH = 10 + lines.length * 5
+        ensure(boxH + 6)
         setFill(doc, PALETTE.paperDeep)
         doc.rect(MARGIN, y, contentW, boxH, 'F')
         setFill(doc, PALETTE.gold)

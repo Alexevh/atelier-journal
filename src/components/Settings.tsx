@@ -305,7 +305,7 @@ export default function Settings({ onBack }: Props) {
             <div className="grid-2">
               {CONFIG_FIELDS.map((f) => (
                 <div className="field" key={f}>
-                  <label>{t(`sync.field${f[0].toUpperCase()}${f.slice(1)}`)}</label>
+                  <label>{f}</label>
                   <input
                     value={cfg[f]}
                     onChange={(e) => setConfig(f, e.target.value)}

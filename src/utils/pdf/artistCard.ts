@@ -22,7 +22,7 @@ export async function buildArtistCard(project: Project): Promise<jsPDF> {
   doc.rect(5, 5, A6.w - 10, A6.h - 10)
 
   let y = 18
-  if (project.finalImage) {
+  if (project.finalImage?.dataUrl) {
     const r = await drawFittedImage(doc, project.finalImage.dataUrl, M, y, contentW, 46, {
       frame: true,
     })

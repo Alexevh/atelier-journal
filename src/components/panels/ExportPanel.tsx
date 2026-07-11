@@ -4,6 +4,7 @@ import { useI18n } from '../../i18n/I18nContext'
 import { exportProject } from '../../utils/transfer'
 import { generateQrDataUrl } from '../../utils/qr'
 import { exportSocialCard } from '../../utils/socialCard'
+import FrameStudio from '../FrameStudio'
 import ImageField from '../ImageField'
 import { IconDoc, IconDownload, IconImage, IconQr } from '../Icons'
 
@@ -17,6 +18,7 @@ export default function ExportPanel({ project, update, notify }: Props) {
   const { t } = useI18n()
   const [busy, setBusy] = useState(false)
   const [qr, setQr] = useState<string | null>(null)
+  const [framing, setFraming] = useState(false)
   const opts = project.pdfOptions
 
   const setOpts = (patch: Partial<PdfOptions>) =>
@@ -147,6 +149,17 @@ export default function ExportPanel({ project, update, notify }: Props) {
 
         <div className="export-card">
           <span className="ico">
+            <IconImage size={28} />
+          </span>
+          <h4>{t('frame.exportTitle')}</h4>
+          <p>{t('frame.exportText')}</p>
+          <button className="btn btn-sm" onClick={() => setFraming(true)}>
+            <IconImage size={15} /> {t('frame.open')}
+          </button>
+        </div>
+
+        <div className="export-card">
+          <span className="ico">
             <IconQr size={28} />
           </span>
           <h4>{t('export.qrTitle')}</h4>
@@ -165,6 +178,14 @@ export default function ExportPanel({ project, update, notify }: Props) {
           )}
         </div>
       </div>
+
+      {framing && (
+        <FrameStudio
+          image={project.finalImage || project.referenceImage}
+          title={project.title}
+          onClose={() => setFraming(false)}
+        />
+      )}
     </div>
   )
 }

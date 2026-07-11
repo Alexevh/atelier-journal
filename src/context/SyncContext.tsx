@@ -113,6 +113,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         const dt = tombSet.get(r.id) ?? -1
         if (dt < r.updatedAt) syncedRef.current.set(r.id, r.updatedAt)
       })
+      // ids removed by a remote tombstone need no delete-push from our side
+      for (const id of [...syncedRef.current.keys()]) {
+        if (!resultMap.has(id) && tombSet.has(id)) syncedRef.current.delete(id)
+      }
 
       const merged = [...resultMap.values()].sort((a, b) => b.createdAt - a.createdAt)
       if (!sameProjects(merged, projectsRef.current)) {
@@ -151,7 +155,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           syncedRef.current.delete(id)
         }
       }
-      if (activeRef.current && status !== 'offline') setStatus('synced')
+      // read connectivity live rather than a captured status (avoids a stale
+      // closure overwriting 'offline' set by a concurrent handler)
+      if (activeRef.current && navigator.onLine) setStatus('synced')
     } catch (err) {
       // network blips are expected; reflect offline but keep local intact
       if (!navigator.onLine) setStatus('offline')
@@ -162,7 +168,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     } finally {
       pushingRef.current = false
     }
-  }, [status])
+  }, [])
 
   // push whenever local projects change (only while sync is active)
   useEffect(() => {
@@ -263,6 +269,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true
+      // detach auth + snapshot listeners so config changes / unmount don't leak
+      teardown()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, configured, cfg?.projectId, cfg?.apiKey, cfg?.appId])

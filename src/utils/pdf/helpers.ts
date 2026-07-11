@@ -129,10 +129,5 @@ export function drawWatermark(doc: jsPDF, text: string, pageW: number, pageH: nu
   if (gs && setGState) setGState.call(doc, new gs({ opacity: 1 }))
 }
 
-/** Format an ISO date as e.g. "14 March 2026". */
-export function formatLongDate(iso: string): string {
-  if (!iso) return ''
-  const d = new Date(iso + 'T00:00:00')
-  if (isNaN(d.getTime())) return iso
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-}
+// Re-export the locale-aware date formatter so PDFs honour the active language.
+export { formatLongDate } from '../date'

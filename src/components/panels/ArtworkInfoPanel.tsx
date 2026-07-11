@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Project, ProjectStatus, STATUS_LABELS } from '../../types'
 import { useI18n } from '../../i18n/I18nContext'
 import CompareSlider from '../CompareSlider'
+import FrameStudio from '../FrameStudio'
 import ImageField from '../ImageField'
-import { IconClose } from '../Icons'
+import { IconClose, IconImage } from '../Icons'
 
 interface Props {
   project: Project
@@ -13,6 +14,7 @@ interface Props {
 export default function ArtworkInfoPanel({ project, update }: Props) {
   const { t } = useI18n()
   const [tagDraft, setTagDraft] = useState('')
+  const [framing, setFraming] = useState(false)
 
   const set = <K extends keyof Project>(key: K, value: Project[K]) =>
     update((p) => ({ ...p, [key]: value }))
@@ -138,6 +140,17 @@ export default function ArtworkInfoPanel({ project, update }: Props) {
       <p className="muted" style={{ fontSize: '0.82rem', fontStyle: 'italic', marginTop: '0.6rem' }}>
         {t('info.imagesNote')}
       </p>
+
+      <button className="btn" style={{ marginTop: '0.3rem' }} onClick={() => setFraming(true)}>
+        <IconImage size={16} /> {t('frame.open')}
+      </button>
+      {framing && (
+        <FrameStudio
+          image={project.finalImage || project.referenceImage}
+          title={project.title}
+          onClose={() => setFraming(false)}
+        />
+      )}
 
       {project.referenceImage && project.finalImage && (
         <div style={{ marginTop: '1.2rem' }}>

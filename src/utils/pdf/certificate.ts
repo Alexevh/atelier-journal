@@ -40,7 +40,7 @@ export async function buildCertificate(project: Project): Promise<jsPDF> {
   brushDivider(doc, A6.w / 2 - 18, 19, 36, PALETTE.gold)
 
   let y = 24
-  if (project.finalImage) {
+  if (project.finalImage?.dataUrl) {
     const r = await drawFittedImage(doc, project.finalImage.dataUrl, M, y, contentW, 42, {
       frame: true,
     })

@@ -73,6 +73,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     return () => {
       if (saveTimer.current) window.clearTimeout(saveTimer.current)
+      if (backupTimer.current) window.clearTimeout(backupTimer.current)
     }
   }, [projects, ready])
 
@@ -106,26 +107,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const duplicateProject = useCallback(
     (id: string) => {
-      let copy: Project | undefined
+      // Build the copy outside the state updater so the updater stays pure
+      // (StrictMode runs updaters twice; ids/timestamps must not differ).
+      const original = projects.find((p) => p.id === id)
+      if (!original) return undefined
+      const now = Date.now()
+      const copy: Project = {
+        ...structuredClone(original),
+        id: uid('p_'),
+        title: `${original.title} (copy)`,
+        createdAt: now,
+        updatedAt: now,
+      }
       setProjects((prev) => {
-        const original = prev.find((p) => p.id === id)
-        if (!original) return prev
-        const now = Date.now()
-        copy = {
-          ...structuredClone(original),
-          id: uid('p_'),
-          title: `${original.title} (copy)`,
-          createdAt: now,
-          updatedAt: now,
-        }
         const idx = prev.findIndex((p) => p.id === id)
         const next = [...prev]
-        next.splice(idx + 1, 0, copy)
+        next.splice(idx < 0 ? 0 : idx + 1, 0, copy)
         return next
       })
       return copy
     },
-    [],
+    [projects],
   )
 
   const importProjects = useCallback((incoming: Project[]) => {
