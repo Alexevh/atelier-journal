@@ -128,6 +128,55 @@ export const FRAME_PRESETS: FramePreset[] = [
       ],
     },
   },
+  // ---- modern gallery styles (thin moulding + mat, like framed prints) -----
+  {
+    id: 'black-mat',
+    nameKey: 'frame.p.blackMat',
+    spec: {
+      scale: 0.04,
+      bands: [
+        { width: 0.85, color: '#211d1a', texture: 'flat', profile: 'convex' },
+        { width: 0.15, color: '#0f0d0b', texture: 'flat', profile: 'concave' },
+      ],
+      mat: { width: 0.085, color: '#fbf9f4' },
+    },
+  },
+  {
+    id: 'gold-mat',
+    nameKey: 'frame.p.goldMat',
+    spec: {
+      scale: 0.04,
+      bands: [
+        { width: 0.8, color: '#c9a24b', texture: 'gold', profile: 'convex' },
+        { width: 0.2, color: '#8a6a2f', texture: 'flat', profile: 'concave' },
+      ],
+      mat: { width: 0.085, color: '#faf6ec' },
+    },
+  },
+  {
+    id: 'white-mat',
+    nameKey: 'frame.p.whiteMat',
+    spec: {
+      scale: 0.04,
+      bands: [
+        { width: 0.85, color: '#f4f2ec', texture: 'flat', profile: 'convex' },
+        { width: 0.15, color: '#d8d4ca', texture: 'flat', profile: 'concave' },
+      ],
+      mat: { width: 0.085, color: '#ffffff' },
+    },
+  },
+  {
+    id: 'walnut-mat',
+    nameKey: 'frame.p.walnutMat',
+    spec: {
+      scale: 0.04,
+      bands: [
+        { width: 0.85, color: '#5a4030', texture: 'wood', profile: 'convex' },
+        { width: 0.15, color: '#38291d', texture: 'flat', profile: 'concave' },
+      ],
+      mat: { width: 0.085, color: '#fbf8f0' },
+    },
+  },
   // ---- modern styles -------------------------------------------------------
   {
     id: 'float-oak',
