@@ -131,6 +131,18 @@ export interface SyncSettings {
   firebaseConfig: FirebaseConfig | null
 }
 
+/** A user-imported picture frame for the Frame Studio (stored on-device). */
+export interface CustomFrame {
+  id: string
+  name: string
+  /** Cropped frame photograph as a data URL. */
+  dataUrl: string
+  /** 9-slice opening insets as fractions of the image size. */
+  insets: { l: number; t: number; r: number; b: number }
+  /** Moulding width relative to the artwork's smaller dimension. */
+  scale: number
+}
+
 export interface AppSettings {
   // Artist identity — used to prefill new projects, certificates and PDFs.
   artistName: string
@@ -143,6 +155,8 @@ export interface AppSettings {
   defaultMaterialsSummary: string
   // Backup reminder cadence, in days.
   backupReminderDays: number
+  // User-imported frames for the Frame Studio.
+  customFrames: CustomFrame[]
   // Optional cloud sync.
   sync: SyncSettings
 }

@@ -8,8 +8,10 @@
 export interface PhotoFrame {
   id: string
   nameKey: string
-  /** File name under public/frames/. */
-  file: string
+  /** File name under public/frames/ (bundled frames). */
+  file?: string
+  /** Inline image data (user-imported custom frames). */
+  dataUrl?: string
   /**
    * Opening insets as fractions of the (already cropped) frame image size:
    * the artwork opening spans from (l*W, t*H) to ((1-r)*W, (1-b)*H).
@@ -141,9 +143,11 @@ export function frameAssetUrl(file: string): string {
 }
 
 function getFrameImage(frame: PhotoFrame): Promise<HTMLImageElement> {
+  // custom frames carry their image inline; don't cache (they can be replaced)
+  if (frame.dataUrl) return loadImage(frame.dataUrl)
   let p = frameCache.get(frame.id)
   if (!p) {
-    p = loadImage(frameAssetUrl(frame.file))
+    p = loadImage(frameAssetUrl(frame.file!))
     frameCache.set(frame.id, p)
   }
   return p

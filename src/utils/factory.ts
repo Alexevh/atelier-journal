@@ -17,6 +17,7 @@ export function createSettings(): AppSettings {
     defaultAuthenticityText: t('default.authenticity'),
     defaultMaterialsSummary: t('default.materialsSummary'),
     backupReminderDays: 14,
+    customFrames: [],
     sync: {
       enabled: false,
       provider: 'firebase',
