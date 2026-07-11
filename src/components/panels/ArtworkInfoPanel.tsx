@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Project, ProjectStatus, STATUS_LABELS } from '../../types'
 import { useI18n } from '../../i18n/I18nContext'
+import CompareSlider from '../CompareSlider'
 import ImageField from '../ImageField'
 import { IconClose } from '../Icons'
 
@@ -124,17 +125,33 @@ export default function ArtworkInfoPanel({ project, update }: Props) {
           image={project.referenceImage}
           onChange={(img) => set('referenceImage', img)}
           dropLabel={t('info.refDrop')}
+          study
         />
         <ImageField
           label={t('info.finalImage')}
           image={project.finalImage}
           onChange={(img) => set('finalImage', img)}
           dropLabel={t('info.finalDrop')}
+          study
         />
       </div>
       <p className="muted" style={{ fontSize: '0.82rem', fontStyle: 'italic', marginTop: '0.6rem' }}>
         {t('info.imagesNote')}
       </p>
+
+      {project.referenceImage && project.finalImage && (
+        <div style={{ marginTop: '1.2rem' }}>
+          <span className="label" style={{ display: 'block', marginBottom: '0.5rem' }}>
+            {t('compare.title')}
+          </span>
+          <CompareSlider
+            before={project.referenceImage}
+            after={project.finalImage}
+            beforeLabel={t('pdf.reference')}
+            afterLabel={t('pdf.finalArtwork')}
+          />
+        </div>
+      )}
     </div>
   )
 }

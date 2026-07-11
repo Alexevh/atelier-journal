@@ -1,7 +1,7 @@
 import { useApp } from '../context/AppContext'
 import { useI18n } from '../i18n/I18nContext'
 import { Project } from '../types'
-import { formatLongDate } from '../utils/date'
+import { formatDuration, formatLongDate } from '../utils/date'
 import { exportProject } from '../utils/transfer'
 import BrushDivider from './BrushDivider'
 import CollapsiblePanel from './CollapsiblePanel'
@@ -105,6 +105,10 @@ export default function ProjectEditor({ projectId, onBack }: Props) {
         {project.year && <span>{project.year}</span>}
         {project.technique && <span>{project.technique}</span>}
         {project.dimensions && <span>{project.dimensions}</span>}
+        {(() => {
+          const total = project.entries.reduce((s, e) => s + (e.minutes ?? 0), 0)
+          return total > 0 ? <span>{formatDuration(total)}</span> : null
+        })()}
         <span>
           ·{' '}
           {t('editor.lastEdited', {

@@ -3,8 +3,9 @@ import { PdfOptions, Project } from '../../types'
 import { useI18n } from '../../i18n/I18nContext'
 import { exportProject } from '../../utils/transfer'
 import { generateQrDataUrl } from '../../utils/qr'
+import { exportSocialCard } from '../../utils/socialCard'
 import ImageField from '../ImageField'
-import { IconDoc, IconDownload, IconQr } from '../Icons'
+import { IconDoc, IconDownload, IconImage, IconQr } from '../Icons'
 
 interface Props {
   project: Project
@@ -119,6 +120,28 @@ export default function ExportPanel({ project, update, notify }: Props) {
             }}
           >
             <IconDownload size={15} /> {t('export.exportJson')}
+          </button>
+        </div>
+
+        <div className="export-card">
+          <span className="ico">
+            <IconImage size={28} />
+          </span>
+          <h4>{t('export.socialTitle')}</h4>
+          <p>{t('export.socialText')}</p>
+          <button
+            className="btn btn-sm"
+            disabled={!project.finalImage && !project.referenceImage}
+            onClick={async () => {
+              try {
+                await exportSocialCard(project, opts.artistName)
+                notify(t('export.socialDone'), 'success')
+              } catch {
+                notify(t('notify.pdfError'), 'error')
+              }
+            }}
+          >
+            <IconDownload size={15} /> {t('export.socialBtn')}
           </button>
         </div>
 

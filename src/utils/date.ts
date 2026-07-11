@@ -23,3 +23,13 @@ export function formatRelativeDays(timestamp: number): string {
 export function daysSince(timestamp: number): number {
   return Math.floor((Date.now() - timestamp) / 86_400_000)
 }
+
+/** Minutes as a compact "2 h 30 min" / "45 min" string. */
+export function formatDuration(minutes: number): string {
+  if (!minutes || minutes < 1) return ''
+  const h = Math.floor(minutes / 60)
+  const m = Math.round(minutes % 60)
+  if (h && m) return `${h} h ${m} min`
+  if (h) return `${h} h`
+  return `${m} min`
+}

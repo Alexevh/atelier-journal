@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { StoredImage } from '../types'
 import { processImageFile } from '../utils/image'
 import { useI18n } from '../i18n/I18nContext'
 import DropZone from './DropZone'
-import { IconTrash, IconUpload } from './Icons'
+import StudyLightbox from './StudyLightbox'
+import { IconSearch, IconTrash, IconUpload } from './Icons'
 
 interface Props {
   label?: string
@@ -12,6 +14,8 @@ interface Props {
   maxDimension?: number
   /** white card styling for signatures/logos with transparency */
   signature?: boolean
+  /** show a "study" button opening the painter's image tools */
+  study?: boolean
 }
 
 /** A single-image picker with preview, replace and remove. */
@@ -22,15 +26,27 @@ export default function ImageField({
   dropLabel,
   maxDimension,
   signature,
+  study,
 }: Props) {
   const { t } = useI18n()
+  const [studyOpen, setStudyOpen] = useState(false)
   return (
     <div className={`image-slot ${signature ? 'sig-slot' : ''}`}>
       {label && <span className="label">{label}</span>}
       {image ? (
         <div className={signature ? 'sig-preview' : 'image-preview'}>
-          <img src={image.dataUrl} alt={image.name || label || ''} />
+          <img
+            src={image.dataUrl}
+            alt={image.name || label || ''}
+            onClick={() => study && setStudyOpen(true)}
+            style={study ? { cursor: 'zoom-in' } : undefined}
+          />
           <div className={signature ? 'row' : 'replace-bar'} style={signature ? { marginTop: 8, justifyContent: 'center' } : undefined}>
+            {study && (
+              <button className="btn btn-sm" onClick={() => setStudyOpen(true)}>
+                <IconSearch size={14} /> {t('study.open')}
+              </button>
+            )}
             <label className="btn btn-sm">
               <IconUpload size={14} /> {t('common.replace')}
               <input
@@ -50,6 +66,9 @@ export default function ImageField({
               <IconTrash size={14} /> {t('common.remove')}
             </button>
           </div>
+          {studyOpen && (
+            <StudyLightbox images={[image]} onClose={() => setStudyOpen(false)} />
+          )}
         </div>
       ) : (
         <DropZone

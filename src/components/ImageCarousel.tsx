@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { StoredImage } from '../types'
 import { useI18n } from '../i18n/I18nContext'
-import { IconChevron, IconClose, IconTrash } from './Icons'
+import StudyLightbox from './StudyLightbox'
+import { IconChevron, IconTrash } from './Icons'
 
 interface Props {
   images: StoredImage[]
@@ -79,12 +80,7 @@ export default function ImageCarousel({ images, onRemove, lightbox = true }: Pro
       )}
 
       {zoom && (
-        <div className="lightbox" onClick={() => setZoom(false)}>
-          <button className="lightbox-close" aria-label={t('carousel.close')}>
-            <IconClose size={26} />
-          </button>
-          <img src={current.dataUrl} alt={current.name || ''} onClick={(e) => e.stopPropagation()} />
-        </div>
+        <StudyLightbox images={images} startIndex={index} onClose={() => setZoom(false)} />
       )}
     </div>
   )

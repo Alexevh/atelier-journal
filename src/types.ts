@@ -55,6 +55,8 @@ export interface ProcessEntry {
   description: string
   images: StoredImage[] // 1..5
   notes: ArtisticNote[]
+  /** Minutes worked in this session (optional). */
+  minutes?: number
   createdAt: number
 }
 

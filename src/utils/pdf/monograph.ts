@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf'
 import { Project } from '../../types'
 import { t } from '../../i18n'
+import { formatDuration } from '../date'
 import {
   PALETTE,
   brushDivider,
@@ -201,11 +202,14 @@ export async function buildMonograph(project: Project): Promise<jsPDF> {
     doc.text(titleLines, MARGIN + 14, y - 1)
     let blockY = y + titleLines.length * 6
 
-    if (entry.date) {
+    const metaLine = [entry.date && formatLongDate(entry.date), formatDuration(entry.minutes ?? 0)]
+      .filter(Boolean)
+      .join('   ·   ')
+    if (metaLine) {
       setText(doc, PALETTE.faint)
       doc.setFont('times', 'italic')
       doc.setFontSize(10)
-      doc.text(formatLongDate(entry.date), MARGIN + 14, blockY)
+      doc.text(metaLine, MARGIN + 14, blockY)
       blockY += 6
     }
     y = blockY + 2

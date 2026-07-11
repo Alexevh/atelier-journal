@@ -7,7 +7,7 @@ import {
 } from '../../types'
 import { useI18n } from '../../i18n/I18nContext'
 import { createEntry } from '../../utils/factory'
-import { formatLongDate } from '../../utils/date'
+import { formatDuration, formatLongDate } from '../../utils/date'
 import BrushDivider from '../BrushDivider'
 import DropZone from '../DropZone'
 import ImageCarousel from '../ImageCarousel'
@@ -21,13 +21,22 @@ interface Props {
 
 const MAX_IMAGES = 5
 
+const TEMPLATE_KEYS = [
+  'tpl.sketch',
+  'tpl.blockin',
+  'tpl.colorStudy',
+  'tpl.firstPass',
+  'tpl.glazing',
+  'tpl.finalDetails',
+]
+
 export default function ProcessPanel({ project, update }: Props) {
   const { t } = useI18n()
   const setEntries = (entries: ProcessEntry[]) =>
     update((p) => ({ ...p, entries }))
 
-  const addEntry = () => {
-    const entry = createEntry()
+  const addEntry = (title?: string) => {
+    const entry = createEntry(title ? { title } : undefined)
     setEntries([...project.entries, entry])
     setEditingId(entry.id)
   }
@@ -40,8 +49,16 @@ export default function ProcessPanel({ project, update }: Props) {
 
   const [editingId, setEditingId] = useState<string | null>(null)
 
+  const totalMinutes = project.entries.reduce((sum, e) => sum + (e.minutes ?? 0), 0)
+
   return (
     <div>
+      {totalMinutes > 0 && (
+        <p className="muted" style={{ fontStyle: 'italic', marginTop: 0 }}>
+          {t('time.total', { time: formatDuration(totalMinutes) })}
+        </p>
+      )}
+
       {project.entries.length === 0 ? (
         <p className="muted" style={{ fontStyle: 'italic' }}>
           {t('process.empty')}
@@ -68,7 +85,16 @@ export default function ProcessPanel({ project, update }: Props) {
         </div>
       )}
 
-      <button className="btn btn-primary" onClick={addEntry} style={{ marginTop: '0.6rem' }}>
+      <div className="template-row">
+        <span className="template-label">{t('process.quickAdd')}</span>
+        {TEMPLATE_KEYS.map((k) => (
+          <button key={k} className="template-chip" onClick={() => addEntry(t(k))}>
+            <IconPlus size={12} /> {t(k)}
+          </button>
+        ))}
+      </div>
+
+      <button className="btn btn-primary" onClick={() => addEntry()} style={{ marginTop: '0.6rem' }}>
         <IconPlus size={16} /> {t('process.addEntry')}
       </button>
     </div>
@@ -125,6 +151,19 @@ function EntryCard({
                   onChange={(e) => onChange({ date: e.target.value })}
                 />
               </div>
+              <div className="field">
+                <label>{t('entry.minutes')}</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={5}
+                  value={entry.minutes ?? ''}
+                  onChange={(e) =>
+                    onChange({ minutes: e.target.value ? Math.max(0, Number(e.target.value)) : undefined })
+                  }
+                  placeholder="0"
+                />
+              </div>
             </div>
             <div className="field">
               <label>{t('entry.description')}</label>
@@ -177,7 +216,11 @@ function EntryCard({
             <div className="entry-head">
               <div>
                 <h3 className="entry-title">{entry.title}</h3>
-                {entry.date && <span className="entry-date">{formatLongDate(entry.date)}</span>}
+                <span className="entry-date">
+                  {[entry.date && formatLongDate(entry.date), formatDuration(entry.minutes ?? 0)]
+                    .filter(Boolean)
+                    .join('  ·  ')}
+                </span>
               </div>
               <div className="entry-actions">
                 <button

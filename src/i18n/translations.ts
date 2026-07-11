@@ -161,6 +161,39 @@ const es: Dict = {
   'entry.deleteTitle': 'Eliminar entrada',
   'entry.removePhoto': 'Quitar foto',
   'entry.newTitle': 'Nueva Entrada de Proceso',
+  'entry.minutes': 'Duración (min)',
+  'time.total': 'Tiempo total de trabajo: {time}',
+
+  // stage templates
+  'process.quickAdd': 'Agregar rápido:',
+  'tpl.sketch': 'Boceto inicial',
+  'tpl.blockin': 'Encaje',
+  'tpl.colorStudy': 'Estudio de color',
+  'tpl.firstPass': 'Primera capa',
+  'tpl.glazing': 'Veladura',
+  'tpl.finalDetails': 'Detalles finales',
+
+  // image study tools
+  'study.open': 'Estudiar',
+  'study.values': 'Valores',
+  'study.grid': 'Grilla',
+  'study.mirror': 'Espejo',
+
+  // before/after
+  'compare.title': 'Antes / Después',
+
+  // gallery sort
+  'sort.label': 'Ordenar',
+  'sort.recent': 'Editadas recién',
+  'sort.created': 'Creadas recién',
+  'sort.title': 'Título (A–Z)',
+  'sort.year': 'Año',
+
+  // social card
+  'export.socialTitle': 'Tarjeta para redes',
+  'export.socialText': 'Una imagen cuadrada lista para Instagram con tu obra.',
+  'export.socialBtn': 'Generar imagen',
+  'export.socialDone': 'Tarjeta para redes generada.',
 
   // notes
   'notes.heading': 'Decisiones y Descubrimientos Artísticos',
@@ -505,6 +538,39 @@ const en: Dict = {
   'entry.deleteTitle': 'Delete entry',
   'entry.removePhoto': 'Remove photo',
   'entry.newTitle': 'New Process Entry',
+  'entry.minutes': 'Duration (min)',
+  'time.total': 'Total time worked: {time}',
+
+  // stage templates
+  'process.quickAdd': 'Quick add:',
+  'tpl.sketch': 'Initial sketch',
+  'tpl.blockin': 'Blocking in',
+  'tpl.colorStudy': 'Color study',
+  'tpl.firstPass': 'First pass',
+  'tpl.glazing': 'Glazing',
+  'tpl.finalDetails': 'Final details',
+
+  // image study tools
+  'study.open': 'Study',
+  'study.values': 'Values',
+  'study.grid': 'Grid',
+  'study.mirror': 'Mirror',
+
+  // before/after
+  'compare.title': 'Before / After',
+
+  // gallery sort
+  'sort.label': 'Sort',
+  'sort.recent': 'Recently edited',
+  'sort.created': 'Recently created',
+  'sort.title': 'Title (A–Z)',
+  'sort.year': 'Year',
+
+  // social card
+  'export.socialTitle': 'Social card',
+  'export.socialText': 'A square, Instagram-ready image of your artwork.',
+  'export.socialBtn': 'Generate image',
+  'export.socialDone': 'Social card generated.',
 
   'notes.heading': 'Artistic Decisions & Discoveries',
   'notes.noCategory': '— No category —',

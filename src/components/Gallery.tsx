@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext'
 import { useSettings } from '../context/SettingsContext'
 import { useI18n } from '../i18n/I18nContext'
 import { newProjectWithDefaults } from '../utils/factory'
+import { formatDuration } from '../utils/date'
 import { Project, ProjectStatus } from '../types'
 import BrushDivider from './BrushDivider'
 import StorageStatus from './StorageStatus'
@@ -19,6 +20,7 @@ interface Props {
 }
 
 type Filter = 'all' | ProjectStatus
+type Sort = 'recent' | 'created' | 'title' | 'year'
 
 export default function Gallery({ onOpen }: Props) {
   const { projects, addProject, duplicateProject, deleteProject, notify } = useApp()
@@ -26,10 +28,11 @@ export default function Gallery({ onOpen }: Props) {
   const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
+  const [sort, setSort] = useState<Sort>('recent')
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return projects.filter((p) => {
+    const list = projects.filter((p) => {
       if (filter !== 'all' && p.status !== filter) return false
       if (!q) return true
       const haystack = [
@@ -46,7 +49,22 @@ export default function Gallery({ onOpen }: Props) {
         .toLowerCase()
       return haystack.includes(q)
     })
-  }, [projects, query, filter])
+    const sorted = [...list]
+    sorted.sort((a, b) => {
+      switch (sort) {
+        case 'title':
+          return a.title.localeCompare(b.title)
+        case 'year':
+          return (Number(b.year) || 0) - (Number(a.year) || 0)
+        case 'created':
+          return b.createdAt - a.createdAt
+        case 'recent':
+        default:
+          return b.updatedAt - a.updatedAt
+      }
+    })
+    return sorted
+  }, [projects, query, filter, sort])
 
   const handleNew = () => {
     const p = addProject(newProjectWithDefaults(settings))
@@ -87,6 +105,17 @@ export default function Gallery({ onOpen }: Props) {
             </button>
           ))}
         </div>
+        <select
+          className="sort-select"
+          value={sort}
+          onChange={(e) => setSort(e.target.value as Sort)}
+          aria-label={t('sort.label')}
+        >
+          <option value="recent">{t('sort.recent')}</option>
+          <option value="created">{t('sort.created')}</option>
+          <option value="title">{t('sort.title')}</option>
+          <option value="year">{t('sort.year')}</option>
+        </select>
         <button className="btn btn-primary" onClick={handleNew}>
           <IconPlus size={16} /> {t('gallery.newWork')}
         </button>
@@ -183,6 +212,10 @@ function ArtCard({
           <span className="muted" style={{ fontSize: '0.78rem' }}>
             {project.entries.length}{' '}
             {project.entries.length === 1 ? t('card.entrySingular') : t('card.entryPlural')}
+            {(() => {
+              const total = project.entries.reduce((s, e) => s + (e.minutes ?? 0), 0)
+              return total > 0 ? ` · ${formatDuration(total)}` : ''
+            })()}
           </span>
         </div>
       </div>
