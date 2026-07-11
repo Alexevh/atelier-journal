@@ -201,6 +201,10 @@ const es: Dict = {
   'frame.empty': 'Tomá una foto de tu cuadro o subí una imagen para enmarcarla.',
   'frame.exportTitle': 'Foto enmarcada',
   'frame.exportText': 'Fotografiá tu cuadro y probalo con marcos clásicos o aleatorios.',
+  'frame.select': 'Elegir marco',
+  'frame.groupCustom': 'Mis marcos',
+  'frame.groupReal': 'Marcos reales (Rijksmuseum)',
+  'frame.groupClassic': 'Marcos del taller',
   'frame.customAdd': 'Mi marco',
   'frame.customHint':
     'Importá una foto de tu propio marco (o uno generado por IA): frontal, vacío y con fondo liso. La abertura se detecta sola.',
@@ -633,6 +637,10 @@ const en: Dict = {
   'frame.empty': 'Take a photo of your painting or upload an image to frame it.',
   'frame.exportTitle': 'Framed photo',
   'frame.exportText': 'Photograph your painting and try classic or random frames on it.',
+  'frame.select': 'Choose frame',
+  'frame.groupCustom': 'My frames',
+  'frame.groupReal': 'Real frames (Rijksmuseum)',
+  'frame.groupClassic': 'Studio frames',
   'frame.customAdd': 'My frame',
   'frame.customHint':
     'Import a photo of your own frame (or an AI-generated one): frontal, empty, on a plain background. The opening is detected automatically.',

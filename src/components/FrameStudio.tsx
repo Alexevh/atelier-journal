@@ -122,13 +122,6 @@ export default function FrameStudio({ image, title, onClose }: Props) {
     setPhoto(await processImageFile(file))
   }, [])
 
-  const selectedId =
-    selection.kind === 'custom'
-      ? selection.id
-      : effective.kind === 'photo'
-        ? effective.frame.id
-        : effective.id
-
   const applyPreset = (id: string) => {
     const preset = FRAME_PRESETS.find((p) => p.id === id)
     if (preset) {
@@ -327,6 +320,62 @@ export default function FrameStudio({ image, title, onClose }: Props) {
       )}
 
       <div className="framestudio-presets" onClick={(e) => e.stopPropagation()}>
+        <select
+          className="frame-select"
+          value={
+            selection.kind === 'custom'
+              ? `custom:${selection.id}`
+              : selection.kind === 'photo'
+                ? `real:${selection.frame.id}`
+                : selection.id
+                  ? `spec:${selection.id}`
+                  : '__random'
+          }
+          onChange={(e) => {
+            const v = e.target.value
+            if (v === '__random') {
+              rollRandom()
+            } else if (v.startsWith('custom:')) {
+              setSelection({ kind: 'custom', id: v.slice(7) })
+              setMatOn(false)
+              setTuneOpen(false)
+            } else if (v.startsWith('real:')) {
+              const f = PHOTO_FRAMES.find((x) => x.id === v.slice(5))
+              if (f) applyPhotoFrame(f)
+            } else if (v.startsWith('spec:')) {
+              applyPreset(v.slice(5))
+            }
+          }}
+          aria-label={t('frame.select')}
+        >
+          {selection.kind === 'spec' && !selection.id && (
+            <option value="__random">🎲 {t('frame.random')}</option>
+          )}
+          {customFrames.length > 0 && (
+            <optgroup label={t('frame.groupCustom')}>
+              {customFrames.map((f) => (
+                <option key={f.id} value={`custom:${f.id}`}>
+                  {f.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          <optgroup label={t('frame.groupReal')}>
+            {PHOTO_FRAMES.map((f) => (
+              <option key={f.id} value={`real:${f.id}`}>
+                ★ {t(f.nameKey)}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label={t('frame.groupClassic')}>
+            {FRAME_PRESETS.map((p) => (
+              <option key={p.id} value={`spec:${p.id}`}>
+                {t(p.nameKey)}
+              </option>
+            ))}
+          </optgroup>
+        </select>
+
         <button className="frame-chip frame-chip-random" onClick={rollRandom}>
           🎲 {t('frame.random')}
         </button>
@@ -337,7 +386,6 @@ export default function FrameStudio({ image, title, onClose }: Props) {
         >
           {t('frame.mat')}
         </button>
-        <span className="frame-chip-sep" />
         <button
           className="frame-chip frame-chip-random"
           onClick={() => frameInputRef.current?.click()}
@@ -346,56 +394,24 @@ export default function FrameStudio({ image, title, onClose }: Props) {
         >
           <IconPlus size={12} /> {t('frame.customAdd')}
         </button>
-        {customFrames.map((f) => (
-          <span key={f.id} className={`frame-chip frame-chip-custom ${selectedId === f.id ? 'active' : ''}`}>
+        {selectedCustom && (
+          <>
             <button
-              className="frame-chip-label"
-              onClick={() => {
-                setSelection({ kind: 'custom', id: f.id })
-                setMatOn(false)
-              }}
+              className={`frame-chip ${tuneOpen ? 'active' : ''}`}
+              onClick={() => setTuneOpen((v) => !v)}
+              title={t('frame.tune')}
             >
-              {f.name}
+              ⚙ {t('frame.tune')}
             </button>
-            {selectedId === f.id && (
-              <button
-                className="frame-chip-mini"
-                onClick={() => setTuneOpen((v) => !v)}
-                title={t('frame.tune')}
-              >
-                ⚙
-              </button>
-            )}
             <button
-              className="frame-chip-mini"
-              onClick={() => removeCustom(f.id)}
+              className="frame-chip"
+              onClick={() => removeCustom(selectedCustom.id)}
               title={t('common.delete')}
             >
               ✕
             </button>
-          </span>
-        ))}
-        <span className="frame-chip-sep" />
-        {PHOTO_FRAMES.map((f) => (
-          <button
-            key={f.id}
-            className={`frame-chip frame-chip-real ${selectedId === f.id ? 'active' : ''}`}
-            onClick={() => applyPhotoFrame(f)}
-            title={t('frame.realHint')}
-          >
-            ★ {t(f.nameKey)}
-          </button>
-        ))}
-        {PHOTO_FRAMES.length > 0 && <span className="frame-chip-sep" />}
-        {FRAME_PRESETS.map((p) => (
-          <button
-            key={p.id}
-            className={`frame-chip ${selectedId === p.id ? 'active' : ''}`}
-            onClick={() => applyPreset(p.id)}
-          >
-            {t(p.nameKey)}
-          </button>
-        ))}
+          </>
+        )}
       </div>
     </div>
   )

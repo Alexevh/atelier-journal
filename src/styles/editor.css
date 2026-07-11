@@ -714,9 +714,32 @@
   display: flex;
   gap: 0.45rem;
   padding: 0.8rem 1rem 1.1rem;
-  overflow-x: auto;
-  justify-content: safe center;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
   background: rgba(0, 0, 0, 0.3);
+}
+.frame-select {
+  width: auto;
+  max-width: min(320px, 60vw);
+  background: rgba(243, 236, 221, 0.08);
+  border: 1px solid rgba(243, 236, 221, 0.3);
+  color: #f3ecdd;
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  padding: 0.45em 0.8em;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.frame-select:focus {
+  outline: none;
+  border-color: var(--gold-soft);
+  box-shadow: 0 0 0 3px rgba(211, 165, 88, 0.25);
+}
+.frame-select option,
+.frame-select optgroup {
+  background: #211c17;
+  color: #f3ecdd;
 }
 .frame-chip {
   flex: none;
