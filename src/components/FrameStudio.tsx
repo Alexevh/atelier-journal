@@ -7,16 +7,22 @@ import { processImageFile } from '../utils/image'
 import { analyzeFrameImage } from '../utils/frameAnalysis'
 import { uid } from '../utils/id'
 import {
+  colorHex,
   downloadCanvas,
+  FRAME_COLORS,
+  FRAME_MULTIPLIERS,
   FRAME_PRESETS,
   FrameSpec,
+  MAT_WIDTHS,
   randomFrameSpec,
+  recolorSpec,
   renderFramedImage,
+  SizeStep,
 } from '../utils/frames'
 import { PHOTO_FRAMES, PhotoFrame, renderPhotoFramedImage } from '../utils/photoFrames'
 import { IconClose, IconDownload, IconImage, IconPlus, IconUpload } from './Icons'
 
-const DEFAULT_MAT = { width: 0.06, color: '#f6f2e7' }
+const SIZE_STEPS: SizeStep[] = ['small', 'medium', 'large']
 
 type Selection =
   | { kind: 'spec'; id: string; spec: FrameSpec }
@@ -53,27 +59,36 @@ export default function FrameStudio({ image, title, onClose }: Props) {
     spec: FRAME_PRESETS[0].spec,
   })
   const [matOn, setMatOn] = useState<boolean>(!!FRAME_PRESETS[0].spec.mat)
+  const [matColor, setMatColor] = useState('cream')
+  const [matSize, setMatSize] = useState<SizeStep>('medium')
+  const [frameColor, setFrameColor] = useState('original')
+  const [frameSize, setFrameSize] = useState<SizeStep>('medium')
   const [busy, setBusy] = useState(false)
   const [tuneOpen, setTuneOpen] = useState(false)
 
   const customFrames = settings.customFrames
+  const isSpec = selection.kind === 'spec'
 
-  // the mat toggle overrides whatever the preset/random roll came with;
-  // custom selections resolve live from settings so slider tweaks re-render
+  // Compose the frame to render: procedural frames get recoloured/resized and
+  // take the mat controls; photo frames (real + custom) only take the mat.
   const effective = useMemo(() => {
+    const mat = matOn ? { width: MAT_WIDTHS[matSize], color: colorHex(matColor) } : undefined
+
     if (selection.kind === 'custom') {
       const c = customFrames.find((f) => f.id === selection.id)
       return c
-        ? ({ kind: 'photo', frame: customToPhotoFrame(c) } as const)
-        : ({ kind: 'spec', id: FRAME_PRESETS[0].id, spec: FRAME_PRESETS[0].spec } as const)
+        ? ({ kind: 'photo', frame: customToPhotoFrame(c), mat } as const)
+        : ({ kind: 'spec', spec: FRAME_PRESETS[0].spec } as const)
     }
-    if (selection.kind === 'photo') return selection
-    const base = selection.spec
-    let spec = base
-    if (matOn && !base.mat) spec = { ...base, mat: DEFAULT_MAT }
-    else if (!matOn && base.mat) spec = { ...base, mat: undefined }
-    return { ...selection, spec }
-  }, [selection, matOn, customFrames])
+    if (selection.kind === 'photo') {
+      return { kind: 'photo', frame: selection.frame, mat } as const
+    }
+
+    let spec: FrameSpec = selection.spec
+    if (frameColor !== 'original') spec = recolorSpec(spec, colorHex(frameColor))
+    spec = { ...spec, scale: spec.scale * FRAME_MULTIPLIERS[frameSize], mat }
+    return { kind: 'spec', spec } as const
+  }, [selection, matOn, matColor, matSize, frameColor, frameSize, customFrames])
   const holderRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
@@ -96,9 +111,7 @@ export default function FrameStudio({ image, title, onClose }: Props) {
     setBusy(true)
     const job =
       effective.kind === 'photo'
-        ? renderPhotoFramedImage(photo.dataUrl, effective.frame, {
-            mat: matOn ? DEFAULT_MAT : undefined,
-          })
+        ? renderPhotoFramedImage(photo.dataUrl, effective.frame, { mat: effective.mat })
         : renderFramedImage(photo.dataUrl, effective.spec)
     job
       .then((canvas) => {
@@ -115,7 +128,7 @@ export default function FrameStudio({ image, title, onClose }: Props) {
       .finally(() => {
         if (seq === renderSeq.current) setBusy(false)
       })
-  }, [photo, effective, matOn])
+  }, [photo, effective])
 
   const pickFile = useCallback(async (file: File | undefined) => {
     if (!file) return
@@ -411,6 +424,58 @@ export default function FrameStudio({ image, title, onClose }: Props) {
             >
               ✕
             </button>
+          </>
+        )}
+      </div>
+
+      <div className="frame-controls" onClick={(e) => e.stopPropagation()}>
+        {isSpec && (
+          <>
+            <label className="fc">
+              <span>{t('frame.frameColor')}</span>
+              <select value={frameColor} onChange={(e) => setFrameColor(e.target.value)}>
+                <option value="original">{t('color.original')}</option>
+                {FRAME_COLORS.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {t(`color.${c.id}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="fc">
+              <span>{t('frame.frameSize')}</span>
+              <select value={frameSize} onChange={(e) => setFrameSize(e.target.value as SizeStep)}>
+                {SIZE_STEPS.map((s) => (
+                  <option key={s} value={s}>
+                    {t(`size.${s}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
+        {matOn && (
+          <>
+            <label className="fc">
+              <span>{t('frame.matColor')}</span>
+              <select value={matColor} onChange={(e) => setMatColor(e.target.value)}>
+                {FRAME_COLORS.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {t(`color.${c.id}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="fc">
+              <span>{t('frame.matSize')}</span>
+              <select value={matSize} onChange={(e) => setMatSize(e.target.value as SizeStep)}>
+                {SIZE_STEPS.map((s) => (
+                  <option key={s} value={s}>
+                    {t(`size.${s}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
           </>
         )}
       </div>

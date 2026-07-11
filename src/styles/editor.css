@@ -772,6 +772,44 @@
 .frame-chip-random {
   border-style: dashed;
 }
+
+/* adjustment dropdowns (frame/mat colour + width) */
+.frame-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  justify-content: center;
+  align-items: center;
+  padding: 0 1rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+}
+.frame-controls .fc {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #cfc4ad;
+  font-size: 0.74rem;
+  font-style: italic;
+}
+.frame-controls .fc select {
+  width: auto;
+  background: rgba(243, 236, 221, 0.08);
+  border: 1px solid rgba(243, 236, 221, 0.3);
+  color: #f3ecdd;
+  font-family: var(--font-serif);
+  font-size: 0.82rem;
+  padding: 0.3em 0.6em;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.frame-controls .fc select:focus {
+  outline: none;
+  border-color: var(--gold-soft);
+}
+.frame-controls .fc option {
+  background: #211c17;
+  color: #f3ecdd;
+}
 .frame-chip-custom {
   display: inline-flex;
   align-items: center;

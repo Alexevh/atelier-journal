@@ -37,6 +37,74 @@ export interface FramePreset {
   spec: FrameSpec
 }
 
+// ---- shared colour palette (mat + frame recolouring) -----------------------
+
+export interface ColorOption {
+  id: string
+  hex: string
+}
+
+export const FRAME_COLORS: ColorOption[] = [
+  { id: 'white', hex: '#f6f4ef' },
+  { id: 'cream', hex: '#f0e8d2' },
+  { id: 'black', hex: '#1c1a17' },
+  { id: 'gray', hex: '#b4afa4' },
+  { id: 'pink', hex: '#e6a6c1' },
+  { id: 'blue', hex: '#a7cee6' },
+  { id: 'violet', hex: '#b3a0d6' },
+  { id: 'red', hex: '#b23a30' },
+  { id: 'green', hex: '#7c9e68' },
+  { id: 'brown', hex: '#75522f' },
+  { id: 'gold', hex: '#c6a24c' },
+  { id: 'navy', hex: '#37506e' },
+]
+
+export function colorHex(id: string): string {
+  return FRAME_COLORS.find((c) => c.id === id)?.hex ?? '#f0e8d2'
+}
+
+export type SizeStep = 'small' | 'medium' | 'large'
+export const MAT_WIDTHS: Record<SizeStep, number> = { small: 0.04, medium: 0.075, large: 0.12 }
+export const FRAME_MULTIPLIERS: Record<SizeStep, number> = { small: 0.62, medium: 1, large: 1.55 }
+
+function hx(h: string): [number, number, number] {
+  return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]
+}
+function toHex(r: number, g: number, b: number): string {
+  const c = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0')
+  return `#${c(r)}${c(g)}${c(b)}`
+}
+function relLum([r, g, b]: [number, number, number]): number {
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255
+}
+/** A shade of baseHex at the given target luminance (preserves hue). */
+function tintTo(baseHex: string, targetLum: number): string {
+  const [r, g, b] = hx(baseHex)
+  const bl = relLum([r, g, b]) || 0.001
+  if (targetLum >= bl) {
+    const t = (targetLum - bl) / (1 - bl || 1)
+    return toHex(r + (255 - r) * t, g + (255 - g) * t, b + (255 - b) * t)
+  }
+  const t = targetLum / bl
+  return toHex(r * t, g * t, b * t)
+}
+
+/**
+ * Recolour a frame spec to shades of a single hue, preserving each band's
+ * relative lightness (so the profile shading survives). Gilt/gold textures
+ * become flat so the colour reads cleanly.
+ */
+export function recolorSpec(spec: FrameSpec, baseHex: string): FrameSpec {
+  return {
+    ...spec,
+    bands: spec.bands.map((band) => ({
+      ...band,
+      color: tintTo(baseHex, relLum(hx(band.color))),
+      texture: band.texture === 'gold' ? 'flat' : band.texture,
+    })),
+  }
+}
+
 // ---- presets ---------------------------------------------------------------
 
 export const FRAME_PRESETS: FramePreset[] = [
