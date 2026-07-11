@@ -67,6 +67,27 @@ export const PHOTO_FRAMES: PhotoFrame[] = [
     insets: { l: 0.0211, t: 0.0357, r: 0.0282, b: 0.0446 },
     scale: 0.045,
   },
+  {
+    id: 'real-530',
+    nameKey: 'frame.r.agedGilt',
+    file: 'rp-l-530.jpg',
+    insets: { l: 0.0545, t: 0.0662, r: 0.074, b: 0.0764 },
+    scale: 0.075,
+  },
+  {
+    id: 'real-579',
+    nameKey: 'frame.r.oakGold',
+    file: 'rp-l-579.jpg',
+    insets: { l: 0.146, t: 0.118, r: 0.144, b: 0.12 },
+    scale: 0.15,
+  },
+  {
+    id: 'real-580',
+    nameKey: 'frame.r.beech',
+    file: 'rp-l-580.jpg',
+    insets: { l: 0.03, t: 0.026, r: 0.028, b: 0.026 },
+    scale: 0.035,
+  },
 ]
 
 function loadImage(src: string): Promise<HTMLImageElement> {

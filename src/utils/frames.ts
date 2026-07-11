@@ -128,6 +128,60 @@ export const FRAME_PRESETS: FramePreset[] = [
       ],
     },
   },
+  // ---- modern styles -------------------------------------------------------
+  {
+    id: 'float-oak',
+    nameKey: 'frame.p.floatOak',
+    spec: {
+      scale: 0.05,
+      bands: [
+        { width: 0.62, color: '#b18a58', texture: 'wood', profile: 'flat' },
+        { width: 0.38, color: '#14110e', texture: 'flat', profile: 'concave' },
+      ],
+    },
+  },
+  {
+    id: 'metal-black',
+    nameKey: 'frame.p.metalBlack',
+    spec: {
+      scale: 0.035,
+      bands: [
+        { width: 0.85, color: '#1b1917', texture: 'flat', profile: 'convex' },
+        { width: 0.15, color: '#3d3a36', texture: 'flat', profile: 'concave' },
+      ],
+    },
+  },
+  {
+    id: 'aluminum',
+    nameKey: 'frame.p.aluminum',
+    spec: {
+      scale: 0.035,
+      bands: [
+        { width: 0.8, color: '#b4b7bb', texture: 'gold', profile: 'convex' },
+        { width: 0.2, color: '#83868a', texture: 'flat', profile: 'concave' },
+      ],
+    },
+  },
+  {
+    id: 'scandi-oak',
+    nameKey: 'frame.p.scandiOak',
+    spec: {
+      scale: 0.055,
+      bands: [{ width: 1, color: '#cfa87a', texture: 'wood', profile: 'flat' }],
+      mat: { width: 0.07, color: '#fbf9f4' },
+    },
+  },
+  {
+    id: 'walnut-modern',
+    nameKey: 'frame.p.walnutModern',
+    spec: {
+      scale: 0.05,
+      bands: [
+        { width: 0.88, color: '#5a4030', texture: 'wood', profile: 'flat' },
+        { width: 0.12, color: '#38291d', texture: 'flat', profile: 'concave' },
+      ],
+    },
+  },
   {
     id: 'linen-cream',
     nameKey: 'frame.p.linen',

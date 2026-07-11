@@ -208,6 +208,9 @@ const es: Dict = {
   'frame.r.silverLinen': 'Plata y lino',
   'frame.r.artNouveau': 'Art Nouveau',
   'frame.r.mahogany': 'Caoba fina',
+  'frame.r.agedGilt': 'Dorado envejecido',
+  'frame.r.oakGold': 'Roble y oro',
+  'frame.r.beech': 'Haya minimalista',
   'frame.p.goldClassic': 'Dorado clásico',
   'frame.p.baroque': 'Barroco ornamentado',
   'frame.p.walnut': 'Nogal oscuro',
@@ -216,6 +219,11 @@ const es: Dict = {
   'frame.p.museumBlack': 'Museo negro',
   'frame.p.silver': 'Plata envejecida',
   'frame.p.linen': 'Lino y oro',
+  'frame.p.floatOak': 'Flotante roble',
+  'frame.p.metalBlack': 'Metal negro',
+  'frame.p.aluminum': 'Aluminio',
+  'frame.p.scandiOak': 'Roble nórdico',
+  'frame.p.walnutModern': 'Nogal moderno',
 
   // social card
   'export.socialTitle': 'Tarjeta para redes',
@@ -613,6 +621,9 @@ const en: Dict = {
   'frame.r.silverLinen': 'Silver & linen',
   'frame.r.artNouveau': 'Art Nouveau',
   'frame.r.mahogany': 'Slim mahogany',
+  'frame.r.agedGilt': 'Aged gilt',
+  'frame.r.oakGold': 'Oak & gold',
+  'frame.r.beech': 'Minimal beech',
   'frame.p.goldClassic': 'Classic gold',
   'frame.p.baroque': 'Ornate baroque',
   'frame.p.walnut': 'Dark walnut',
@@ -621,6 +632,11 @@ const en: Dict = {
   'frame.p.museumBlack': 'Museum black',
   'frame.p.silver': 'Aged silver',
   'frame.p.linen': 'Linen & gold',
+  'frame.p.floatOak': 'Oak float',
+  'frame.p.metalBlack': 'Black metal',
+  'frame.p.aluminum': 'Aluminium',
+  'frame.p.scandiOak': 'Nordic oak',
+  'frame.p.walnutModern': 'Modern walnut',
 
   // social card
   'export.socialTitle': 'Social card',
