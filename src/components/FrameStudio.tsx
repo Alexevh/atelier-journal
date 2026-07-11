@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StoredImage } from '../types'
 import { useI18n } from '../i18n/I18nContext'
 import { processImageFile } from '../utils/image'
@@ -10,6 +10,8 @@ import {
   renderFramedImage,
 } from '../utils/frames'
 import { IconClose, IconDownload, IconImage, IconUpload } from './Icons'
+
+const DEFAULT_MAT = { width: 0.06, color: '#f6f2e7' }
 
 interface Props {
   image?: StoredImage
@@ -29,8 +31,16 @@ export default function FrameStudio({ image, title, onClose }: Props) {
   const { t } = useI18n()
   const [photo, setPhoto] = useState<StoredImage | undefined>(image)
   const [presetId, setPresetId] = useState(FRAME_PRESETS[0].id)
-  const [spec, setSpec] = useState<FrameSpec>(FRAME_PRESETS[0].spec)
+  const [baseSpec, setBaseSpec] = useState<FrameSpec>(FRAME_PRESETS[0].spec)
+  const [matOn, setMatOn] = useState<boolean>(!!FRAME_PRESETS[0].spec.mat)
   const [busy, setBusy] = useState(false)
+
+  // the mat toggle overrides whatever the preset/random roll came with
+  const spec = useMemo<FrameSpec>(() => {
+    if (matOn && !baseSpec.mat) return { ...baseSpec, mat: DEFAULT_MAT }
+    if (!matOn && baseSpec.mat) return { ...baseSpec, mat: undefined }
+    return baseSpec
+  }, [baseSpec, matOn])
   const holderRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
@@ -57,11 +67,7 @@ export default function FrameStudio({ image, title, onClose }: Props) {
         const holder = holderRef.current
         if (holder) {
           holder.innerHTML = ''
-          canvas.style.maxWidth = '100%'
-          canvas.style.maxHeight = '72vh'
-          canvas.style.width = 'auto'
-          canvas.style.height = 'auto'
-          canvas.style.boxShadow = '0 24px 70px rgba(0,0,0,0.55)'
+          canvas.className = 'framestudio-canvas'
           holder.appendChild(canvas)
         }
       })
@@ -80,13 +86,16 @@ export default function FrameStudio({ image, title, onClose }: Props) {
     const preset = FRAME_PRESETS.find((p) => p.id === id)
     if (preset) {
       setPresetId(id)
-      setSpec(preset.spec)
+      setBaseSpec(preset.spec)
+      setMatOn(!!preset.spec.mat)
     }
   }
 
   const rollRandom = () => {
     setPresetId('')
-    setSpec(randomFrameSpec())
+    const rolled = randomFrameSpec()
+    setBaseSpec(rolled)
+    setMatOn(!!rolled.mat)
   }
 
   return (
@@ -160,6 +169,14 @@ export default function FrameStudio({ image, title, onClose }: Props) {
         <button className="frame-chip frame-chip-random" onClick={rollRandom}>
           🎲 {t('frame.random')}
         </button>
+        <button
+          className={`frame-chip ${matOn ? 'active' : ''}`}
+          onClick={() => setMatOn((v) => !v)}
+          title={t('frame.matHint')}
+        >
+          {t('frame.mat')}
+        </button>
+        <span className="frame-chip-sep" />
         {FRAME_PRESETS.map((p) => (
           <button
             key={p.id}
