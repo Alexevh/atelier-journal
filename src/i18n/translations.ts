@@ -203,7 +203,7 @@ const es: Dict = {
   'frame.exportText': 'Fotografiá tu cuadro y probalo con marcos clásicos o aleatorios.',
   'frame.select': 'Elegir marco',
   'frame.groupCustom': 'Mis marcos',
-  'frame.groupReal': 'Marcos reales (Rijksmuseum)',
+  'frame.groupReal': 'Marcos reales',
   'frame.groupClassic': 'Marcos del taller',
   'frame.customAdd': 'Mi marco',
   'frame.customHint':
@@ -234,6 +234,7 @@ const es: Dict = {
   'frame.r.openworkGold': 'Oro calado',
   'frame.r.veneer': 'Chapa de madera',
   'frame.r.modernGallery': 'Galería moderna',
+  'frame.r.joker': 'Joker',
   'frame.p.goldClassic': 'Dorado clásico',
   'frame.p.baroque': 'Barroco ornamentado',
   'frame.p.walnut': 'Nogal oscuro',
@@ -643,7 +644,7 @@ const en: Dict = {
   'frame.exportText': 'Photograph your painting and try classic or random frames on it.',
   'frame.select': 'Choose frame',
   'frame.groupCustom': 'My frames',
-  'frame.groupReal': 'Real frames (Rijksmuseum)',
+  'frame.groupReal': 'Real frames',
   'frame.groupClassic': 'Studio frames',
   'frame.customAdd': 'My frame',
   'frame.customHint':
@@ -674,6 +675,7 @@ const en: Dict = {
   'frame.r.openworkGold': 'Openwork gold',
   'frame.r.veneer': 'Wood veneer',
   'frame.r.modernGallery': 'Modern gallery',
+  'frame.r.joker': 'Joker',
   'frame.p.goldClassic': 'Classic gold',
   'frame.p.baroque': 'Ornate baroque',
   'frame.p.walnut': 'Dark walnut',

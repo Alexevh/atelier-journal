@@ -205,6 +205,7 @@ export default function FrameStudio({ image, title, onClose }: Props) {
 
   return (
     <div className="study framestudio" role="dialog" aria-modal="true">
+      <div className="framestudio-spacer" onClick={onClose} />
       <div className="study-toolbar" onClick={(e) => e.stopPropagation()}>
         <span className="framestudio-title">{t('frame.title')}</span>
         <span className="study-sep" />

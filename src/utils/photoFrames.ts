@@ -125,6 +125,14 @@ export const PHOTO_FRAMES: PhotoFrame[] = [
     insets: { l: 0.198, t: 0.153, r: 0.211, b: 0.22 },
     scale: 0.22,
   },
+  // AI-generated frame contributed by the app author (interior blanked).
+  {
+    id: 'real-joker',
+    nameKey: 'frame.r.joker',
+    file: 'joker.jpg',
+    insets: { l: 0.135, t: 0.068, r: 0.158, b: 0.096 },
+    scale: 0.12,
+  },
 ]
 
 function loadImage(src: string): Promise<HTMLImageElement> {
