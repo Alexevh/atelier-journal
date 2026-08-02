@@ -1,0 +1,55 @@
+/* Tailwind utilities for the ported Pigment Match "Colour" tool.
+   Preflight is disabled (see tailwind.config.js) so Atelier's own base styles
+   are untouched. The shadcn theme variables are namespaced --pm-* to avoid
+   colliding with Atelier's design tokens, and track Atelier's data-theme. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pm-background: 0 0% 100%;
+  --pm-foreground: 240 10% 4%;
+  --pm-card: 0 0% 98%;
+  --pm-card-foreground: 240 10% 4%;
+  --pm-primary: 240 6% 10%;
+  --pm-primary-foreground: 0 0% 98%;
+  --pm-secondary: 240 5% 90%;
+  --pm-secondary-foreground: 240 6% 10%;
+  --pm-muted: 240 5% 92%;
+  --pm-muted-foreground: 240 4% 40%;
+  --pm-accent: 24 70% 52%;
+  --pm-accent-foreground: 0 0% 100%;
+  --pm-border: 240 6% 88%;
+  --pm-input: 240 6% 88%;
+  --pm-ring: 24 70% 52%;
+  --pm-radius: 0.85rem;
+}
+
+:root[data-theme='dark'] {
+  --pm-background: 240 10% 6%;
+  --pm-foreground: 0 0% 95%;
+  --pm-card: 240 8% 10%;
+  --pm-card-foreground: 0 0% 95%;
+  --pm-primary: 0 0% 95%;
+  --pm-primary-foreground: 240 10% 6%;
+  --pm-secondary: 240 5% 16%;
+  --pm-secondary-foreground: 0 0% 95%;
+  --pm-muted: 240 5% 15%;
+  --pm-muted-foreground: 240 5% 58%;
+  --pm-accent: 24 78% 56%;
+  --pm-accent-foreground: 0 0% 100%;
+  --pm-border: 240 5% 18%;
+  --pm-input: 240 5% 20%;
+  --pm-ring: 24 78% 56%;
+}
+
+/* The colour tool renders inside this scope so its shadcn surface reads as its
+   own panel within the Atelier page. */
+.pigment-scope {
+  color: hsl(var(--pm-foreground));
+  font-family: var(--font-serif);
+}
+.pigment-scope select,
+.pigment-scope input {
+  color: hsl(var(--pm-foreground));
+}

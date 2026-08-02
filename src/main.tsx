@@ -9,6 +9,7 @@ import { I18nProvider } from './i18n/I18nContext'
 import './styles/global.css'
 import './styles/components.css'
 import './styles/editor.css'
+import './styles/pigment.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
