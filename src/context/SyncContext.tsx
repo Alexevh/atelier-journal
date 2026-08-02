@@ -60,26 +60,41 @@ interface Channel<T extends Syncable> {
 async function reconcileChannel<T extends Syncable>(fb: Fb, ch: Channel<T>): Promise<void> {
   const local = ch.getLocal()
   const { items: remote, tombstones } = ch.remoteRef.current
-  const { resultMap, remoteWonIds } = computeMerge(local, remote, tombstones)
+  const { resultMap } = computeMerge(local, remote, tombstones)
 
+  // data we already hold locally, so we never re-download what we have
   const cache = new Map<string, string>()
   local.forEach((p) =>
     ch.collectImages(p).forEach((img) => {
       if (img.dataUrl) cache.set(img.id, img.dataUrl)
     }),
   )
+
+  // Any merged item referencing an image with no data needs (re)hydration —
+  // not just remote-won items. This also HEALS items that previously landed
+  // with missing images (e.g. synced by an older app version or after a
+  // failed fetch), which sameEntities alone would never repair.
   const needed = new Set<string>()
-  remoteWonIds.forEach((id) => {
-    const p = resultMap.get(id)
-    if (p) ch.collectImages(p).forEach((img) => {
-      if (!cache.has(img.id)) needed.add(img.id)
+  const incompleteIds = new Set<string>()
+  resultMap.forEach((item, id) => {
+    ch.collectImages(item).forEach((img) => {
+      if (!img.dataUrl) {
+        incompleteIds.add(id)
+        if (!cache.has(img.id)) needed.add(img.id)
+      }
     })
   })
   const fetched = needed.size ? await fb.loadImages([...needed]) : new Map<string, string>()
   const all = new Map<string, string>([...cache, ...fetched])
-  remoteWonIds.forEach((id) => {
-    const p = resultMap.get(id)
-    if (p) resultMap.set(id, ch.rehydrate(p, all))
+  let healed = false
+  incompleteIds.forEach((id) => {
+    const item = resultMap.get(id)
+    if (!item) return
+    const missingBefore = ch.collectImages(item).filter((i) => !i.dataUrl).length
+    const filled = ch.rehydrate(item, all)
+    const missingAfter = ch.collectImages(filled).filter((i) => !i.dataUrl).length
+    if (missingAfter < missingBefore) healed = true
+    resultMap.set(id, filled)
   })
 
   const tombSet = new Map(tombstones.map((t) => [t.id, t.deletedAt]))
@@ -92,7 +107,7 @@ async function reconcileChannel<T extends Syncable>(fb: Fb, ch: Channel<T>): Pro
   }
 
   const merged = [...resultMap.values()].sort((a, b) => b.createdAt - a.createdAt)
-  if (!sameEntities(merged, ch.getLocal())) ch.apply(merged)
+  if (healed || !sameEntities(merged, ch.getLocal())) ch.apply(merged)
 }
 
 async function pushChannel<T extends Syncable>(fb: Fb, ch: Channel<T>): Promise<void> {
