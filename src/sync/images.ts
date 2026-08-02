@@ -57,31 +57,32 @@ export function rehydrateImages(p: Project, dataUrls: Map<string, string>): Proj
   }))
 }
 
-// ---- ideas (simpler: a flat images array) ---------------------------------
+// ---- ideas (flat images array + per-entry images) -------------------------
 
 export function collectIdeaImages(i: Idea): StoredImage[] {
-  return i.images
+  return [...i.images, ...(i.entries ?? []).flatMap((e) => e.images)]
+}
+
+function stripOne(img: StoredImage): StoredImage {
+  return { id: img.id, dataUrl: '', name: img.name, width: img.width, height: img.height }
 }
 
 export function stripIdeaImages(i: Idea): Idea {
   return {
     ...i,
-    images: i.images.map((img) => ({
-      id: img.id,
-      dataUrl: '',
-      name: img.name,
-      width: img.width,
-      height: img.height,
-    })),
+    images: i.images.map(stripOne),
+    entries: (i.entries ?? []).map((e) => ({ ...e, images: e.images.map(stripOne) })),
   }
 }
 
 export function rehydrateIdeaImages(i: Idea, dataUrls: Map<string, string>): Idea {
+  const fill = (img: StoredImage): StoredImage => ({
+    ...img,
+    dataUrl: dataUrls.get(img.id) ?? img.dataUrl ?? '',
+  })
   return {
     ...i,
-    images: i.images.map((img) => ({
-      ...img,
-      dataUrl: dataUrls.get(img.id) ?? img.dataUrl ?? '',
-    })),
+    images: i.images.map(fill),
+    entries: (i.entries ?? []).map((e) => ({ ...e, images: e.images.map(fill) })),
   }
 }

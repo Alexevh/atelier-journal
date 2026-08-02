@@ -88,6 +88,14 @@ export type IdeaStatus = 'seed' | 'developing' | 'ready' | 'archived'
 
 export const IDEA_STATUSES: IdeaStatus[] = ['seed', 'developing', 'ready', 'archived']
 
+/** A dated development note inside an idea — the idea evolving over time. */
+export interface IdeaEntry {
+  id: string
+  date: string // ISO yyyy-mm-dd
+  text: string
+  images: StoredImage[]
+}
+
 /** A backlog idea: a spark (text + images) not yet started as a work. */
 export interface Idea {
   id: string
@@ -96,6 +104,8 @@ export interface Idea {
   images: StoredImage[]
   tags: string[]
   status: IdeaStatus
+  /** Dated development entries (optional; older data may lack the field). */
+  entries?: IdeaEntry[]
   /** Set once the idea has been turned into a work (provenance link). */
   convertedProjectId?: string
   createdAt: number

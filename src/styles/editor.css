@@ -1413,10 +1413,87 @@
 
 .ideas-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: clamp(1rem, 2.5vw, 1.6rem);
-  align-items: start;
+  align-items: stretch;
   margin-top: 1rem;
+}
+.idea-card.clickable {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+.idea-card.clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+.idea-cover {
+  position: relative;
+  height: 150px;
+  background: var(--paper-2);
+  flex: none;
+}
+.idea-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.idea-cover-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--faint);
+}
+.idea-cover-count {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: 0.7rem;
+  color: var(--paper);
+  background: color-mix(in srgb, var(--ink) 72%, transparent);
+  padding: 0.15em 0.55em;
+  border-radius: 999px;
+}
+.idea-cover .art-card-actions {
+  opacity: 0;
+}
+.idea-card.clickable:hover .art-card-actions {
+  opacity: 1;
+}
+.idea-body {
+  padding: 0.9rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.idea-note.clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.idea-body .idea-foot {
+  margin-top: auto;
+  padding-top: 0.6rem;
+}
+.idea-editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.4rem;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .idea-editor-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .idea-card {
   background: var(--surface);

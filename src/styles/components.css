@@ -15,11 +15,24 @@
   z-index: 50;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: 0.85rem clamp(1rem, 4vw, 2.4rem);
   background: color-mix(in srgb, var(--paper) 86%, transparent);
   backdrop-filter: blur(12px) saturate(1.2);
   border-bottom: 1px solid var(--line-soft);
+}
+@media (max-width: 640px) {
+  .topbar {
+    gap: 0.35rem;
+    padding: 0.6rem 0.75rem;
+  }
+  .topbar .btn {
+    padding: 0.4em 0.55em;
+  }
+  .topbar-spacer {
+    flex: 1 1 auto;
+  }
 }
 .topbar-brand {
   display: flex;

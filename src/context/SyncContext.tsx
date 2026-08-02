@@ -201,8 +201,19 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     reconcilingRef.current = true
     try {
       const fb = await import('../sync/firebase')
-      await reconcileChannel(fb, projectChannel)
-      await reconcileChannel(fb, ideaChannel)
+      // channels are isolated: a failure in one must not block the other
+      const errs: string[] = []
+      try {
+        await reconcileChannel(fb, projectChannel)
+      } catch (e) {
+        errs.push(`projects: ${e instanceof Error ? e.message : String(e)}`)
+      }
+      try {
+        await reconcileChannel(fb, ideaChannel)
+      } catch (e) {
+        errs.push(`ideas: ${e instanceof Error ? e.message : String(e)}`)
+      }
+      if (errs.length) throw new Error(errs.join(' · '))
     } catch (err) {
       setStatus('error')
       setError(err instanceof Error ? err.message : String(err))
@@ -221,8 +232,18 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     pushingRef.current = true
     try {
       const fb = await import('../sync/firebase')
-      await pushChannel(fb, projectChannel)
-      await pushChannel(fb, ideaChannel)
+      const errs: string[] = []
+      try {
+        await pushChannel(fb, projectChannel)
+      } catch (e) {
+        errs.push(`projects: ${e instanceof Error ? e.message : String(e)}`)
+      }
+      try {
+        await pushChannel(fb, ideaChannel)
+      } catch (e) {
+        errs.push(`ideas: ${e instanceof Error ? e.message : String(e)}`)
+      }
+      if (errs.length) throw new Error(errs.join(' · '))
       if (activeRef.current && navigator.onLine) setStatus('synced')
     } catch (err) {
       if (!navigator.onLine) setStatus('offline')
@@ -257,9 +278,18 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     try {
       setStatus('syncing')
       const fb = await import('../sync/firebase')
-      const [pr, ir] = await Promise.all([projectChannel.pull(fb), ideaChannel.pull(fb)])
-      projRemote.current = pr
-      ideaRemote.current = ir
+      // pull channels independently so an ideas failure can't block projects
+      const [pr, ir] = await Promise.allSettled([
+        projectChannel.pull(fb),
+        ideaChannel.pull(fb),
+      ])
+      const pullErrs: string[] = []
+      if (pr.status === 'fulfilled') projRemote.current = pr.value
+      else pullErrs.push(`projects: ${pr.reason instanceof Error ? pr.reason.message : String(pr.reason)}`)
+      if (ir.status === 'fulfilled') ideaRemote.current = ir.value
+      else pullErrs.push(`ideas: ${ir.reason instanceof Error ? ir.reason.message : String(ir.reason)}`)
+      if (pullErrs.length === 2) throw new Error(pullErrs.join(' · '))
+      if (pullErrs.length) setError(pullErrs.join(' · '))
       activeRef.current = true
       await reconcile()
       await pushLocalChanges()

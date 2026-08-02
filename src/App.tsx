@@ -7,6 +7,7 @@ import Gallery from './components/Gallery'
 import ProjectEditor from './components/ProjectEditor'
 import Settings from './components/Settings'
 import IdeasPage from './components/IdeasPage'
+import IdeaEditor from './components/IdeaEditor'
 import ColorPage from './components/ColorPage'
 import { IconClose } from './components/Icons'
 
@@ -15,12 +16,15 @@ type Route =
   | { kind: 'work'; id: string }
   | { kind: 'settings' }
   | { kind: 'ideas' }
+  | { kind: 'idea'; id: string }
   | { kind: 'color' }
 
 function parseHash(): Route {
   const h = window.location.hash
   const work = h.match(/^#\/work\/(.+)$/)
   if (work) return { kind: 'work', id: decodeURIComponent(work[1]) }
+  const idea = h.match(/^#\/idea\/(.+)$/)
+  if (idea) return { kind: 'idea', id: decodeURIComponent(idea[1]) }
   if (h === '#/settings') return { kind: 'settings' }
   if (h === '#/ideas') return { kind: 'ideas' }
   if (h === '#/color') return { kind: 'color' }
@@ -59,6 +63,10 @@ export default function App() {
     window.location.hash = '#/ideas'
     window.scrollTo({ top: 0 })
   }
+  const openIdea = (id: string) => {
+    window.location.hash = `#/idea/${encodeURIComponent(id)}`
+    window.scrollTo({ top: 0 })
+  }
   const openColor = () => {
     window.location.hash = '#/color'
     window.scrollTo({ top: 0 })
@@ -83,7 +91,9 @@ export default function App() {
         ) : route.kind === 'settings' ? (
           <Settings onBack={home} />
         ) : route.kind === 'ideas' ? (
-          <IdeasPage onBack={home} onOpenProject={open} />
+          <IdeasPage onBack={home} onOpenProject={open} onOpenIdea={openIdea} />
+        ) : route.kind === 'idea' ? (
+          <IdeaEditor ideaId={route.id} onBack={openIdeas} onOpenProject={open} />
         ) : route.kind === 'color' ? (
           <ColorPage onBack={home} />
         ) : (

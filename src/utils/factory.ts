@@ -3,6 +3,7 @@ import {
   AppSettings,
   CertificateData,
   Idea,
+  IdeaEntry,
   PdfOptions,
   Project,
   ProcessEntry,
@@ -129,8 +130,19 @@ export function createIdea(partial?: Partial<Idea>): Idea {
     images: [],
     tags: [],
     status: 'seed',
+    entries: [],
     createdAt: now,
     updatedAt: now,
+    ...partial,
+  }
+}
+
+export function createIdeaEntry(partial?: Partial<IdeaEntry>): IdeaEntry {
+  return {
+    id: uid('ie_'),
+    date: new Date().toISOString().slice(0, 10),
+    text: '',
+    images: [],
     ...partial,
   }
 }
