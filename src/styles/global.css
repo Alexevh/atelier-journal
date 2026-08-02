@@ -79,10 +79,12 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-h1,
-h2,
-h3,
-h4 {
+/* Element-level styling is guarded with :not(.pigment-scope *) so the ported
+   Pigment Match tool keeps its own (Tailwind/shadcn) look untouched. */
+h1:not(.pigment-scope *),
+h2:not(.pigment-scope *),
+h3:not(.pigment-scope *),
+h4:not(.pigment-scope *) {
   font-family: var(--font-display);
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -91,11 +93,11 @@ h4 {
   color: var(--ink);
 }
 
-p {
+p:not(.pigment-scope *) {
   margin: 0 0 0.8em;
 }
 
-a {
+a:not(.pigment-scope *) {
   color: var(--accent);
   text-decoration: none;
 }
@@ -195,9 +197,9 @@ img {
   font-size: 0.68rem;
   color: var(--faint);
 }
-input,
-textarea,
-select {
+input:not(.pigment-scope *),
+textarea:not(.pigment-scope *),
+select:not(.pigment-scope *) {
   font-family: var(--font-serif);
   font-size: 1rem;
   color: var(--ink);
@@ -208,14 +210,14 @@ select {
   transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
   width: 100%;
 }
-input:focus,
-textarea:focus,
-select:focus {
+input:not(.pigment-scope *):focus,
+textarea:not(.pigment-scope *):focus,
+select:not(.pigment-scope *):focus {
   outline: none;
   border-color: var(--gold);
   box-shadow: 0 0 0 3px rgba(176, 130, 47, 0.15);
 }
-textarea {
+textarea:not(.pigment-scope *) {
   resize: vertical;
   min-height: 5em;
   line-height: 1.6;

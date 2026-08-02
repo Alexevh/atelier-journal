@@ -1,55 +1,66 @@
-/* Tailwind utilities for the ported Pigment Match "Colour" tool.
-   Preflight is disabled (see tailwind.config.js) so Atelier's own base styles
-   are untouched. The shadcn theme variables are namespaced --pm-* to avoid
-   colliding with Atelier's design tokens, and track Atelier's data-theme. */
+/* Pigment Match styling, ported verbatim (values identical to its index.css).
+   Tailwind preflight is ON so the shadcn components render exactly as in the
+   original app. Variable names carry a --pm- prefix only to avoid colliding
+   with Atelier's own --accent/--radius tokens; every value is unchanged. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --pm-background: 0 0% 100%;
-  --pm-foreground: 240 10% 4%;
-  --pm-card: 0 0% 98%;
-  --pm-card-foreground: 240 10% 4%;
-  --pm-primary: 240 6% 10%;
-  --pm-primary-foreground: 0 0% 98%;
-  --pm-secondary: 240 5% 90%;
-  --pm-secondary-foreground: 240 6% 10%;
-  --pm-muted: 240 5% 92%;
-  --pm-muted-foreground: 240 4% 40%;
-  --pm-accent: 24 70% 52%;
-  --pm-accent-foreground: 0 0% 100%;
-  --pm-border: 240 6% 88%;
-  --pm-input: 240 6% 88%;
-  --pm-ring: 24 70% 52%;
-  --pm-radius: 0.85rem;
+@layer base {
+  :root {
+    --pm-background: 0 0% 100%;
+    --pm-foreground: 240 10% 4%;
+    --pm-card: 0 0% 98%;
+    --pm-card-foreground: 240 10% 4%;
+    --pm-primary: 240 6% 10%;
+    --pm-primary-foreground: 0 0% 98%;
+    --pm-secondary: 240 5% 90%;
+    --pm-secondary-foreground: 240 6% 10%;
+    --pm-muted: 240 5% 92%;
+    --pm-muted-foreground: 240 4% 40%;
+    --pm-accent: 24 70% 52%;
+    --pm-accent-foreground: 0 0% 100%;
+    --pm-border: 240 6% 88%;
+    --pm-input: 240 6% 88%;
+    --pm-ring: 24 70% 52%;
+    --pm-radius: 0.85rem;
+  }
+
+  .dark,
+  :root[data-theme='dark'] {
+    --pm-background: 240 10% 6%;
+    --pm-foreground: 0 0% 95%;
+    --pm-card: 240 8% 10%;
+    --pm-card-foreground: 0 0% 95%;
+    --pm-primary: 0 0% 95%;
+    --pm-primary-foreground: 240 10% 6%;
+    --pm-secondary: 240 5% 16%;
+    --pm-secondary-foreground: 0 0% 95%;
+    --pm-muted: 240 5% 15%;
+    --pm-muted-foreground: 240 5% 58%;
+    --pm-accent: 24 78% 56%;
+    --pm-accent-foreground: 0 0% 100%;
+    --pm-border: 240 5% 18%;
+    --pm-input: 240 5% 20%;
+    --pm-ring: 24 78% 56%;
+  }
 }
 
-:root[data-theme='dark'] {
-  --pm-background: 240 10% 6%;
-  --pm-foreground: 0 0% 95%;
-  --pm-card: 240 8% 10%;
-  --pm-card-foreground: 0 0% 95%;
-  --pm-primary: 0 0% 95%;
-  --pm-primary-foreground: 240 10% 6%;
-  --pm-secondary: 240 5% 16%;
-  --pm-secondary-foreground: 0 0% 95%;
-  --pm-muted: 240 5% 15%;
-  --pm-muted-foreground: 240 5% 58%;
-  --pm-accent: 24 78% 56%;
-  --pm-accent-foreground: 0 0% 100%;
-  --pm-border: 240 5% 18%;
-  --pm-input: 240 5% 20%;
-  --pm-ring: 24 78% 56%;
-}
-
-/* The colour tool renders inside this scope so its shadcn surface reads as its
-   own panel within the Atelier page. */
+/* The ported suite renders inside this scope. It reproduces what the original
+   app applied on <body>: the sans font stack, base sizing and colors. */
 .pigment-scope {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
   color: hsl(var(--pm-foreground));
-  font-family: var(--font-serif);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
-.pigment-scope select,
-.pigment-scope input {
-  color: hsl(var(--pm-foreground));
+.pigment-scope * {
+  border-color: hsl(var(--pm-border));
+}
+/* Give the tool the app background it expects behind its sticky header/cards */
+.pigment-scope .min-h-screen {
+  background-color: hsl(var(--pm-background));
+  border-radius: 8px;
 }

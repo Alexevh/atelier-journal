@@ -1,13 +1,14 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  // Follow Atelier's own theme switch (it sets data-theme on <html>)
+  // Follow Atelier's theme switch (it sets data-theme on <html>); the original
+  // .dark class also works.
   darkMode: ['class', '[data-theme="dark"]'],
   content: ['./index.html', './src/**/*.{ts,tsx}'],
-  // Preflight OFF: Atelier already ships its own base reset; we only want
-  // Tailwind's utilities for the ported Pigment Match components.
-  corePlugins: { preflight: false },
   theme: {
     extend: {
+      // Token values are Pigment Match's originals verbatim; the CSS variable
+      // names are namespaced --pm-* only to avoid clashing with Atelier's own
+      // --accent/--radius custom properties. Purely an internal rename.
       colors: {
         border: 'hsl(var(--pm-border))',
         input: 'hsl(var(--pm-input))',

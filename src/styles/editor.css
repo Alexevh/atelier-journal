@@ -974,6 +974,7 @@
   padding-left: 1.3rem;
   line-height: 1.7;
   color: var(--ink-soft);
+  list-style: decimal; /* Tailwind preflight strips list styles globally */
 }
 .setup-steps li {
   margin-bottom: 0.3rem;
