@@ -47,7 +47,12 @@
 }
 
 /* The ported suite renders inside this scope. It reproduces what the original
-   app applied on <body>: the sans font stack, base sizing and colors. */
+   app applied on <body>: the sans font stack, base sizing and colors.
+   The ORIGINAL variable names are also re-declared here (shadowing Atelier's
+   :root tokens within the subtree) because some ported components reference
+   them raw, e.g. the corner-aligner SVG uses hsl(var(--accent) / 0.12) —
+   against Atelier's hex --accent that becomes invalid and SVG fills fall back
+   to black. */
 .pigment-scope {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif;
   font-size: 1rem;
@@ -55,6 +60,21 @@
   color: hsl(var(--pm-foreground));
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  --background: var(--pm-background);
+  --foreground: var(--pm-foreground);
+  --card: var(--pm-card);
+  --card-foreground: var(--pm-card-foreground);
+  --primary: var(--pm-primary);
+  --primary-foreground: var(--pm-primary-foreground);
+  --secondary: var(--pm-secondary);
+  --secondary-foreground: var(--pm-secondary-foreground);
+  --muted: var(--pm-muted);
+  --muted-foreground: var(--pm-muted-foreground);
+  --accent: var(--pm-accent);
+  --accent-foreground: var(--pm-accent-foreground);
+  --border: var(--pm-border);
+  --input: var(--pm-input);
+  --ring: var(--pm-ring);
 }
 .pigment-scope * {
   border-color: hsl(var(--pm-border));
