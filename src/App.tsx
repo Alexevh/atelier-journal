@@ -9,6 +9,7 @@ import Settings from './components/Settings'
 import IdeasPage from './components/IdeasPage'
 import IdeaEditor from './components/IdeaEditor'
 import ColorPage from './components/ColorPage'
+import HelpPage from './components/HelpPage'
 import { IconClose } from './components/Icons'
 
 type Route =
@@ -18,6 +19,7 @@ type Route =
   | { kind: 'ideas' }
   | { kind: 'idea'; id: string }
   | { kind: 'color' }
+  | { kind: 'help' }
 
 function parseHash(): Route {
   const h = window.location.hash
@@ -28,6 +30,7 @@ function parseHash(): Route {
   if (h === '#/settings') return { kind: 'settings' }
   if (h === '#/ideas') return { kind: 'ideas' }
   if (h === '#/color') return { kind: 'color' }
+  if (h === '#/help') return { kind: 'help' }
   return { kind: 'gallery' }
 }
 
@@ -71,6 +74,10 @@ export default function App() {
     window.location.hash = '#/color'
     window.scrollTo({ top: 0 })
   }
+  const openHelp = () => {
+    window.location.hash = '#/help'
+    window.scrollTo({ top: 0 })
+  }
 
   if (!ready) {
     return (
@@ -84,7 +91,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <TopBar onHome={home} onSettings={openSettings} onIdeas={openIdeas} onColor={openColor} />
+      <TopBar onHome={home} onSettings={openSettings} onIdeas={openIdeas} onColor={openColor} onHelp={openHelp} />
       <main className="page">
         {route.kind === 'work' && activeProject ? (
           <ProjectEditor projectId={route.id} onBack={home} />
@@ -96,6 +103,8 @@ export default function App() {
           <IdeaEditor ideaId={route.id} onBack={openIdeas} onOpenProject={open} />
         ) : route.kind === 'color' ? (
           <ColorPage onBack={home} />
+        ) : route.kind === 'help' ? (
+          <HelpPage onBack={home} />
         ) : (
           <Gallery onOpen={open} />
         )}

@@ -1,4 +1,5 @@
-import { AppData, APP_DATA_VERSION, Idea, Project } from '../types'
+import { AppData, APP_DATA_VERSION, AppSettings, Idea, Project } from '../types'
+import { snapshotColorData } from '../sync/colorData'
 import { uid } from './id'
 
 function download(filename: string, content: string, mime: string) {
@@ -49,14 +50,26 @@ export function exportProject(project: Project) {
   markExported()
 }
 
-/** Export the whole library (all projects + idea backlog). */
-export function exportLibrary(data: AppData) {
+/**
+ * Export EVERYTHING: projects, ideas, app settings, and the colour tool's
+ * snapshot (palettes, prefs, calibration and the Logbook with photos) — one
+ * self-contained backup file.
+ */
+export async function exportLibrary(data: AppData, settings?: AppSettings) {
+  let colorTool: string | undefined
+  try {
+    colorTool = (await snapshotColorData()).payload
+  } catch {
+    /* colour tool data unavailable — export the rest */
+  }
   const payload = {
     type: 'atelier-library',
     version: APP_DATA_VERSION,
     exportedAt: new Date().toISOString(),
     projects: data.projects,
     ideas: data.ideas,
+    settings,
+    colorTool,
   }
   download(`atelier-library-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(payload, null, 2), 'application/json')
   markExported()
@@ -65,6 +78,10 @@ export function exportLibrary(data: AppData) {
 export interface ImportResult {
   projects: Project[]
   ideas: Idea[]
+  /** Present when the file carries a full-backup settings block. */
+  settings?: Partial<AppSettings>
+  /** Present when the file carries the colour tool snapshot payload. */
+  colorTool?: string
 }
 
 /**
@@ -109,6 +126,11 @@ export function parseImport(text: string): ImportResult {
       convertedProjectId: i.convertedProjectId ? projMap.get(i.convertedProjectId) : undefined,
       updatedAt: now,
     })),
+    settings:
+      raw && typeof raw.settings === 'object' && raw.settings
+        ? (raw.settings as Partial<AppSettings>)
+        : undefined,
+    colorTool: typeof raw?.colorTool === 'string' && raw.colorTool ? raw.colorTool : undefined,
   }
 }
 

@@ -36,8 +36,8 @@ export default function StorageStatus() {
     refresh()
   }, [projects])
 
-  const doBackup = () => {
-    exportLibrary({ version: 2, projects, ideas })
+  const doBackup = async () => {
+    await exportLibrary({ version: 2, projects, ideas }, settings)
     notify(t('notify.libraryExported'), 'success')
     setLastExport(getLastExport())
     setDismissed(true)

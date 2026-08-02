@@ -1,14 +1,18 @@
 import { useRef } from 'react'
 import { useApp } from '../context/AppContext'
+import { useSettings } from '../context/SettingsContext'
 import { useSync } from '../context/SyncContext'
 import { useTheme } from '../context/ThemeContext'
 import { useI18n } from '../i18n/I18nContext'
 import { LANGUAGES, Lang } from '../i18n'
+import { applyColorSnapshot } from '../sync/colorData'
+import { mergeSettings } from '../utils/factory'
 import { exportLibrary, parseImport, readFileAsText } from '../utils/transfer'
 import {
   IconCloud,
   IconDownload,
   IconDroplet,
+  IconHelp,
   IconIdea,
   IconMoon,
   IconPalette,
@@ -22,27 +26,38 @@ interface Props {
   onSettings: () => void
   onIdeas: () => void
   onColor: () => void
+  onHelp: () => void
 }
 
-export default function TopBar({ onHome, onSettings, onIdeas, onColor }: Props) {
+export default function TopBar({ onHome, onSettings, onIdeas, onColor, onHelp }: Props) {
   const { theme, toggle } = useTheme()
   const { lang, setLang, t } = useI18n()
   const { projects, ideas, importProjects, importIdeas, notify } = useApp()
+  const { settings, updateSettings } = useSettings()
   const sync = useSync()
   const importRef = useRef<HTMLInputElement>(null)
 
   const handleImport = async (file: File) => {
     try {
       const text = await readFileAsText(file)
-      const { projects: imported, ideas: importedIdeas } = parseImport(text)
-      importProjects(imported)
-      if (importedIdeas.length) importIdeas(importedIdeas)
+      const parsed = parseImport(text)
+      importProjects(parsed.projects)
+      if (parsed.ideas.length) importIdeas(parsed.ideas)
+      // full-backup extras: settings + colour tool snapshot, when present
+      if (parsed.settings) {
+        const restored = mergeSettings(parsed.settings)
+        updateSettings(() => restored)
+      }
+      if (parsed.colorTool) {
+        await applyColorSnapshot(parsed.colorTool)
+      }
       notify(
-        imported.length === 1
+        parsed.projects.length === 1
           ? t('notify.importedOne')
-          : t('notify.importedMany', { count: imported.length }),
+          : t('notify.importedMany', { count: parsed.projects.length }),
         'success',
       )
+      if (parsed.settings || parsed.colorTool) notify(t('notify.fullRestore'), 'success')
     } catch (err) {
       notify(err instanceof Error ? err.message : t('notify.importError'), 'error')
     }
@@ -84,12 +99,12 @@ export default function TopBar({ onHome, onSettings, onIdeas, onColor }: Props) 
       </button>
       <button
         className="btn btn-ghost btn-sm"
-        onClick={() => {
-          if (!projects.length) {
+        onClick={async () => {
+          if (!projects.length && !ideas.length) {
             notify(t('notify.noExport'), 'info')
             return
           }
-          exportLibrary({ version: 2, projects, ideas })
+          await exportLibrary({ version: 2, projects, ideas }, settings)
           notify(t('notify.libraryExported'), 'success')
         }}
         title={t('topbar.exportTitle')}
@@ -168,6 +183,9 @@ export default function TopBar({ onHome, onSettings, onIdeas, onColor }: Props) 
         aria-label={t('settings.open')}
       >
         <IconSettings size={18} />
+      </button>
+      <button className="btn btn-icon" onClick={onHelp} title={t('help.open')} aria-label={t('help.open')}>
+        <IconHelp size={18} />
       </button>
     </header>
   )
