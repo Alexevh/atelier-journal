@@ -1,4 +1,4 @@
-import { AppData, APP_DATA_VERSION, Project } from '../types'
+import { AppData, APP_DATA_VERSION, Idea, Project } from '../types'
 import { uid } from './id'
 
 function download(filename: string, content: string, mime: string) {
@@ -49,13 +49,14 @@ export function exportProject(project: Project) {
   markExported()
 }
 
-/** Export the whole library (all projects). */
+/** Export the whole library (all projects + idea backlog). */
 export function exportLibrary(data: AppData) {
   const payload = {
     type: 'atelier-library',
     version: APP_DATA_VERSION,
     exportedAt: new Date().toISOString(),
     projects: data.projects,
+    ideas: data.ideas,
   }
   download(`atelier-library-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(payload, null, 2), 'application/json')
   markExported()
@@ -63,33 +64,49 @@ export function exportLibrary(data: AppData) {
 
 export interface ImportResult {
   projects: Project[]
+  ideas: Idea[]
 }
 
 /**
- * Parse an imported JSON file. Accepts both single-project and full-library
- * exports. Returns fresh ids so importing never clobbers existing projects.
+ * Parse an imported JSON file. Accepts single-project and full-library exports.
+ * Assigns fresh ids so importing never clobbers existing data, while remapping
+ * project↔idea provenance links to the new ids.
  */
 export function parseImport(text: string): ImportResult {
   const raw = JSON.parse(text)
   let projects: Project[] = []
+  let ideas: Idea[] = []
   if (raw && raw.type === 'atelier-project' && raw.project) {
     projects = [raw.project]
-  } else if (raw && raw.type === 'atelier-library' && Array.isArray(raw.projects)) {
-    projects = raw.projects
+  } else if (raw && raw.type === 'atelier-library') {
+    projects = Array.isArray(raw.projects) ? raw.projects : []
+    ideas = Array.isArray(raw.ideas) ? raw.ideas : []
   } else if (Array.isArray(raw?.projects)) {
     projects = raw.projects
+    ideas = Array.isArray(raw.ideas) ? raw.ideas : []
   } else if (raw && raw.id && raw.title !== undefined) {
-    // bare project object
-    projects = [raw]
+    projects = [raw] // bare project object
   } else {
     throw new Error('Unrecognised file format. Expected an Atelier export.')
   }
 
   const now = Date.now()
+  const projMap = new Map<string, string>()
+  const ideaMap = new Map<string, string>()
+  projects.forEach((p) => projMap.set(p.id, uid('p_')))
+  ideas.forEach((i) => ideaMap.set(i.id, uid('i_')))
+
   return {
     projects: projects.map((p) => ({
       ...p,
-      id: uid('p_'),
+      id: projMap.get(p.id)!,
+      fromIdeaId: p.fromIdeaId ? ideaMap.get(p.fromIdeaId) : undefined,
+      updatedAt: now,
+    })),
+    ideas: ideas.map((i) => ({
+      ...i,
+      id: ideaMap.get(i.id)!,
+      convertedProjectId: i.convertedProjectId ? projMap.get(i.convertedProjectId) : undefined,
       updatedAt: now,
     })),
   }

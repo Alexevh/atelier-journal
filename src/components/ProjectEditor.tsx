@@ -14,6 +14,7 @@ import {
   IconDownload,
   IconImage,
   IconPalette,
+  IconSprout,
   IconTrash,
 } from './Icons'
 import ArtworkInfoPanel from './panels/ArtworkInfoPanel'
@@ -29,9 +30,10 @@ interface Props {
 }
 
 export default function ProjectEditor({ projectId, onBack }: Props) {
-  const { getProject, updateProject, duplicateProject, deleteProject, notify } = useApp()
+  const { getProject, getIdea, updateProject, duplicateProject, deleteProject, notify } = useApp()
   const { t } = useI18n()
   const project = getProject(projectId)
+  const sourceIdea = project?.fromIdeaId ? getIdea(project.fromIdeaId) : undefined
 
   if (!project) {
     return (
@@ -115,6 +117,18 @@ export default function ProjectEditor({ projectId, onBack }: Props) {
             date: formatLongDate(new Date(project.updatedAt).toISOString().slice(0, 10)),
           })}
         </span>
+        {sourceIdea && (
+          <button
+            className="chip"
+            style={{ cursor: 'pointer' }}
+            onClick={() => {
+              window.location.hash = '#/ideas'
+            }}
+            title={t('ideas.open')}
+          >
+            <IconSprout size={13} /> {t('editor.fromIdea')}
+          </button>
+        )}
       </div>
 
       <BrushDivider variant="bold" />

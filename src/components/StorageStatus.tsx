@@ -17,7 +17,7 @@ import { IconDatabase, IconDownload, IconShield } from './Icons'
  * browser is keeping it safe, and a gentle nudge to export a backup.
  */
 export default function StorageStatus() {
-  const { projects, notify } = useApp()
+  const { projects, ideas, notify } = useApp()
   const { settings } = useSettings()
   const { t } = useI18n()
   const [info, setInfo] = useState<StorageInfo | null>(null)
@@ -37,7 +37,7 @@ export default function StorageStatus() {
   }, [projects])
 
   const doBackup = () => {
-    exportLibrary({ version: 1, projects })
+    exportLibrary({ version: 2, projects, ideas })
     notify(t('notify.libraryExported'), 'success')
     setLastExport(getLastExport())
     setDismissed(true)

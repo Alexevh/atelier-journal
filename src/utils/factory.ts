@@ -2,6 +2,7 @@ import {
   ArtistCardData,
   AppSettings,
   CertificateData,
+  Idea,
   PdfOptions,
   Project,
   ProcessEntry,
@@ -103,6 +104,21 @@ export function newProjectWithDefaults(settings: AppSettings): Project {
   p.pdfOptions.artistLogo = settings.artistLogo
   p.artistCard.signatureImage = settings.artistSignature
   return p
+}
+
+export function createIdea(partial?: Partial<Idea>): Idea {
+  const now = Date.now()
+  return {
+    id: uid('i_'),
+    title: '',
+    note: '',
+    images: [],
+    tags: [],
+    status: 'seed',
+    createdAt: now,
+    updatedAt: now,
+    ...partial,
+  }
 }
 
 export function createEntry(partial?: Partial<ProcessEntry>): ProcessEntry {

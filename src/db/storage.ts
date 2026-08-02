@@ -1,4 +1,4 @@
-import { AppData, APP_DATA_VERSION, AppSettings, Project } from '../types'
+import { AppData, APP_DATA_VERSION, AppSettings, Idea, Project } from '../types'
 
 // A tiny promise-based IndexedDB wrapper. Falls back to localStorage when
 // IndexedDB is unavailable (private mode on some browsers). Both keep all data
@@ -56,7 +56,7 @@ async function idbSet<T>(key: string, value: T): Promise<void> {
 }
 
 function emptyData(): AppData {
-  return { version: APP_DATA_VERSION, projects: [] }
+  return { version: APP_DATA_VERSION, projects: [], ideas: [] }
 }
 
 /** Defensive normaliser — migrates/repairs loaded data into a valid shape. */
@@ -64,7 +64,12 @@ function normalize(raw: unknown): AppData {
   if (!raw || typeof raw !== 'object') return emptyData()
   const data = raw as Partial<AppData>
   if (!Array.isArray(data.projects)) return emptyData()
-  return { version: APP_DATA_VERSION, projects: data.projects as Project[] }
+  return {
+    version: APP_DATA_VERSION,
+    projects: data.projects as Project[],
+    // v1 → v2: ideas backlog added
+    ideas: Array.isArray(data.ideas) ? (data.ideas as Idea[]) : [],
+  }
 }
 
 export async function loadData(): Promise<AppData> {
@@ -93,7 +98,7 @@ export async function loadData(): Promise<AppData> {
 }
 
 export async function saveData(data: AppData): Promise<void> {
-  const payload: AppData = { version: APP_DATA_VERSION, projects: data.projects }
+  const payload: AppData = { version: APP_DATA_VERSION, projects: data.projects, ideas: data.ideas }
   try {
     if (hasIndexedDB()) {
       await idbSet(DATA_KEY, payload)

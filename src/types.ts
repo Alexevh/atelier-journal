@@ -84,6 +84,24 @@ export interface PdfOptions {
   artistLogo?: StoredImage
 }
 
+export type IdeaStatus = 'seed' | 'developing' | 'ready' | 'archived'
+
+export const IDEA_STATUSES: IdeaStatus[] = ['seed', 'developing', 'ready', 'archived']
+
+/** A backlog idea: a spark (text + images) not yet started as a work. */
+export interface Idea {
+  id: string
+  title: string
+  note: string
+  images: StoredImage[]
+  tags: string[]
+  status: IdeaStatus
+  /** Set once the idea has been turned into a work (provenance link). */
+  convertedProjectId?: string
+  createdAt: number
+  updatedAt: number
+}
+
 export interface Project {
   id: string
   title: string
@@ -101,6 +119,8 @@ export interface Project {
   certificate: CertificateData
   artistCard: ArtistCardData
   pdfOptions: PdfOptions
+  /** Set when the work was born from a backlog idea (reverse provenance). */
+  fromIdeaId?: string
   createdAt: number
   updatedAt: number
 }
@@ -108,9 +128,10 @@ export interface Project {
 export interface AppData {
   version: number
   projects: Project[]
+  ideas: Idea[]
 }
 
-export const APP_DATA_VERSION = 1
+export const APP_DATA_VERSION = 2
 
 // ---- Settings & optional cloud sync --------------------------------------
 

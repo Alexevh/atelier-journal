@@ -1,8 +1,13 @@
 import type { FirebaseApp } from 'firebase/app'
 import type { Auth, User } from 'firebase/auth'
 import type { Firestore } from 'firebase/firestore'
-import { FirebaseConfig, Project, Tombstone } from '../types'
-import { collectProjectImages, stripImages } from './images'
+import { FirebaseConfig, Idea, Project, Tombstone } from '../types'
+import {
+  collectIdeaImages,
+  collectProjectImages,
+  stripIdeaImages,
+  stripImages,
+} from './images'
 
 // All Firebase runtime modules are dynamically imported so the (large) SDK is
 // only fetched when the user actually enables cloud sync. Type-only imports
@@ -78,6 +83,12 @@ function projectsCol() {
 }
 function tombstonesCol() {
   return fsMod.collection(db!, 'users', uidOrThrow(), 'tombstones')
+}
+function ideasCol() {
+  return fsMod.collection(db!, 'users', uidOrThrow(), 'ideas')
+}
+function ideaTombstonesCol() {
+  return fsMod.collection(db!, 'users', uidOrThrow(), 'ideaTombstones')
 }
 function blobMetaRef(imageId: string) {
   return fsMod.doc(db!, 'users', uidOrThrow(), 'blobs', imageId)
@@ -188,6 +199,66 @@ export function watch(
   )
   return () => {
     unsubP()
+    unsubT()
+  }
+}
+
+// ---- Ideas backlog (same treatment as projects) --------------------------
+
+export interface RemoteIdeas {
+  ideas: Idea[]
+  tombstones: Tombstone[]
+}
+
+export async function pullIdeas(): Promise<RemoteIdeas> {
+  const [iSnap, tSnap] = await Promise.all([
+    fsMod.getDocs(ideasCol()),
+    fsMod.getDocs(ideaTombstonesCol()),
+  ])
+  const ideas: Idea[] = []
+  iSnap.forEach((d) => ideas.push(d.data() as Idea))
+  const tombstones: Tombstone[] = []
+  tSnap.forEach((d) => tombstones.push(d.data() as Tombstone))
+  return { ideas, tombstones }
+}
+
+export async function pushIdea(idea: Idea): Promise<void> {
+  const images = collectIdeaImages(idea).filter((i) => i.dataUrl)
+  for (const img of images) await uploadImageIfMissing(img.id, img.dataUrl)
+  await fsMod.setDoc(fsMod.doc(ideasCol(), idea.id), stripIdeaImages(idea))
+  await fsMod.deleteDoc(fsMod.doc(ideaTombstonesCol(), idea.id)).catch(() => {})
+}
+
+export async function deleteIdeaRemote(id: string): Promise<void> {
+  await fsMod.setDoc(fsMod.doc(ideaTombstonesCol(), id), { id, deletedAt: Date.now() })
+  await fsMod.deleteDoc(fsMod.doc(ideasCol(), id)).catch(() => {})
+}
+
+export function watchIdeas(
+  onIdeas: (ideas: Idea[]) => void,
+  onTombstones: (tombstones: Tombstone[]) => void,
+  onError: (err: Error) => void,
+): () => void {
+  const unsubI = fsMod.onSnapshot(
+    ideasCol(),
+    (snap) => {
+      const list: Idea[] = []
+      snap.forEach((d) => list.push(d.data() as Idea))
+      onIdeas(list)
+    },
+    (err) => onError(err as Error),
+  )
+  const unsubT = fsMod.onSnapshot(
+    ideaTombstonesCol(),
+    (snap) => {
+      const list: Tombstone[] = []
+      snap.forEach((d) => list.push(d.data() as Tombstone))
+      onTombstones(list)
+    },
+    (err) => onError(err as Error),
+  )
+  return () => {
+    unsubI()
     unsubT()
   }
 }

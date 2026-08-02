@@ -1,26 +1,33 @@
-import { Project, Tombstone } from '../types'
+import { Tombstone } from '../types'
 
-export interface MergeResult {
-  /** Final merged project set (remote-won entries still need image rehydration). */
-  resultMap: Map<string, Project>
+/** Any synced entity: a project or an idea. */
+export interface Syncable {
+  id: string
+  updatedAt: number
+  createdAt: number
+}
+
+export interface MergeResult<T> {
+  /** Final merged set (remote-won entries still need image rehydration). */
+  resultMap: Map<string, T>
   /** Ids whose remote version won — caller must rehydrate their images. */
   remoteWonIds: Set<string>
 }
 
 /**
- * Last-write-wins merge by project id across local, remote and tombstones.
+ * Last-write-wins merge by id across local, remote and tombstones.
  * Pure and deterministic; the engine handles the IO around it.
  */
-export function computeMerge(
-  local: Project[],
-  remote: Project[],
+export function computeMerge<T extends Syncable>(
+  local: T[],
+  remote: T[],
   tombstones: Tombstone[],
-): MergeResult {
+): MergeResult<T> {
   const lmap = new Map(local.map((p) => [p.id, p]))
   const rmap = new Map(remote.map((p) => [p.id, p]))
   const tmap = new Map(tombstones.map((t) => [t.id, t]))
 
-  const resultMap = new Map<string, Project>()
+  const resultMap = new Map<string, T>()
   const remoteWonIds = new Set<string>()
 
   const ids = new Set<string>([...lmap.keys(), ...rmap.keys()])
@@ -50,7 +57,7 @@ export function computeMerge(
 }
 
 /** Shallow equality by id + updatedAt — used to skip redundant state updates. */
-export function sameProjects(a: Project[], b: Project[]): boolean {
+export function sameEntities<T extends Syncable>(a: T[], b: T[]): boolean {
   if (a.length !== b.length) return false
   const bm = new Map(b.map((p) => [p.id, p.updatedAt]))
   return a.every((p) => bm.get(p.id) === p.updatedAt)

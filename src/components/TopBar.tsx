@@ -8,6 +8,7 @@ import { exportLibrary, parseImport, readFileAsText } from '../utils/transfer'
 import {
   IconCloud,
   IconDownload,
+  IconIdea,
   IconMoon,
   IconPalette,
   IconSettings,
@@ -18,20 +19,22 @@ import {
 interface Props {
   onHome: () => void
   onSettings: () => void
+  onIdeas: () => void
 }
 
-export default function TopBar({ onHome, onSettings }: Props) {
+export default function TopBar({ onHome, onSettings, onIdeas }: Props) {
   const { theme, toggle } = useTheme()
   const { lang, setLang, t } = useI18n()
-  const { projects, importProjects, notify } = useApp()
+  const { projects, ideas, importProjects, importIdeas, notify } = useApp()
   const sync = useSync()
   const importRef = useRef<HTMLInputElement>(null)
 
   const handleImport = async (file: File) => {
     try {
       const text = await readFileAsText(file)
-      const { projects: imported } = parseImport(text)
+      const { projects: imported, ideas: importedIdeas } = parseImport(text)
       importProjects(imported)
+      if (importedIdeas.length) importIdeas(importedIdeas)
       notify(
         imported.length === 1
           ? t('notify.importedOne')
@@ -84,7 +87,7 @@ export default function TopBar({ onHome, onSettings }: Props) {
             notify(t('notify.noExport'), 'info')
             return
           }
-          exportLibrary({ version: 1, projects })
+          exportLibrary({ version: 2, projects, ideas })
           notify(t('notify.libraryExported'), 'success')
         }}
         title={t('topbar.exportTitle')}
@@ -127,6 +130,19 @@ export default function TopBar({ onHome, onSettings }: Props) {
         ))}
       </div>
 
+      <button
+        className="btn btn-icon"
+        onClick={onIdeas}
+        title={t('ideas.open')}
+        aria-label={t('ideas.open')}
+      >
+        <IconIdea size={18} />
+        {ideas.filter((i) => i.status !== 'archived').length > 0 && (
+          <span className="idea-badge">
+            {ideas.filter((i) => i.status !== 'archived').length}
+          </span>
+        )}
+      </button>
       <button
         className="btn btn-icon"
         onClick={toggle}

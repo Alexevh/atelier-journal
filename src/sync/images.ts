@@ -1,4 +1,4 @@
-import { Project, StoredImage } from '../types'
+import { Idea, Project, StoredImage } from '../types'
 
 type ImgMapper = (img: StoredImage) => StoredImage
 
@@ -55,4 +55,33 @@ export function rehydrateImages(p: Project, dataUrls: Map<string, string>): Proj
     ...img,
     dataUrl: dataUrls.get(img.id) ?? img.dataUrl ?? '',
   }))
+}
+
+// ---- ideas (simpler: a flat images array) ---------------------------------
+
+export function collectIdeaImages(i: Idea): StoredImage[] {
+  return i.images
+}
+
+export function stripIdeaImages(i: Idea): Idea {
+  return {
+    ...i,
+    images: i.images.map((img) => ({
+      id: img.id,
+      dataUrl: '',
+      name: img.name,
+      width: img.width,
+      height: img.height,
+    })),
+  }
+}
+
+export function rehydrateIdeaImages(i: Idea, dataUrls: Map<string, string>): Idea {
+  return {
+    ...i,
+    images: i.images.map((img) => ({
+      ...img,
+      dataUrl: dataUrls.get(img.id) ?? img.dataUrl ?? '',
+    })),
+  }
 }

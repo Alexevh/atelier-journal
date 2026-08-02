@@ -8,9 +8,9 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Project } from '../types'
+import { Idea, Project } from '../types'
 import { loadData, pushBackup, saveData } from '../db/storage'
-import { createProject } from '../utils/factory'
+import { createIdea, createProject } from '../utils/factory'
 import { uid } from '../utils/id'
 
 interface Toast {
@@ -36,6 +36,17 @@ interface AppCtx {
   applyRemoteState: (projects: Project[]) => void
   /** Wipe all local projects (settings untouched). */
   clearAllProjects: () => void
+
+  // ---- ideas backlog ----
+  ideas: Idea[]
+  addIdea: (partial?: Partial<Idea>) => Idea
+  updateIdea: (id: string, updater: (i: Idea) => Idea) => void
+  deleteIdea: (id: string) => void
+  getIdea: (id: string) => Idea | undefined
+  importIdeas: (ideas: Idea[]) => void
+  /** Sync-engine hook: replace ideas verbatim (no updatedAt bump). */
+  applyRemoteIdeas: (ideas: Idea[]) => void
+
   notify: (message: string, tone?: Toast['tone']) => void
   toasts: Toast[]
   dismissToast: (id: string) => void
@@ -45,6 +56,7 @@ const Ctx = createContext<AppCtx | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([])
+  const [ideas, setIdeas] = useState<Idea[]>([])
   const [ready, setReady] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
   const saveTimer = useRef<number | null>(null)
@@ -54,6 +66,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadData().then((data) => {
       setProjects(data.projects)
+      setIdeas(data.ideas)
       setReady(true)
     })
   }, [])
@@ -63,19 +76,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!ready) return
     if (saveTimer.current) window.clearTimeout(saveTimer.current)
     saveTimer.current = window.setTimeout(() => {
-      saveData({ version: 1, projects })
+      saveData({ version: 2, projects, ideas })
     }, 350)
 
     if (backupTimer.current) window.clearTimeout(backupTimer.current)
     backupTimer.current = window.setTimeout(() => {
-      pushBackup({ version: 1, projects })
+      pushBackup({ version: 2, projects, ideas })
     }, 4000)
 
     return () => {
       if (saveTimer.current) window.clearTimeout(saveTimer.current)
       if (backupTimer.current) window.clearTimeout(backupTimer.current)
     }
-  }, [projects, ready])
+  }, [projects, ideas, ready])
 
   const notify = useCallback((message: string, tone: Toast['tone'] = 'info') => {
     const id = uid('t_')
@@ -140,12 +153,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const clearAllProjects = useCallback(() => {
     setProjects([])
+    setIdeas([])
   }, [])
 
   const getProject = useCallback(
     (id: string) => projects.find((p) => p.id === id),
     [projects],
   )
+
+  // ---- ideas backlog ----
+  const addIdea = useCallback((partial?: Partial<Idea>) => {
+    const idea = createIdea(partial)
+    setIdeas((prev) => [idea, ...prev])
+    return idea
+  }, [])
+
+  const updateIdea = useCallback((id: string, updater: (i: Idea) => Idea) => {
+    setIdeas((prev) =>
+      prev.map((i) => (i.id === id ? { ...updater(i), updatedAt: Date.now() } : i)),
+    )
+  }, [])
+
+  const deleteIdea = useCallback((id: string) => {
+    setIdeas((prev) => prev.filter((i) => i.id !== id))
+  }, [])
+
+  const getIdea = useCallback((id: string) => ideas.find((i) => i.id === id), [ideas])
+
+  const importIdeas = useCallback((incoming: Idea[]) => {
+    setIdeas((prev) => [...incoming, ...prev])
+  }, [])
+
+  const applyRemoteIdeas = useCallback((next: Idea[]) => {
+    setIdeas(next)
+  }, [])
 
   const value = useMemo<AppCtx>(
     () => ({
@@ -159,6 +200,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       getProject,
       applyRemoteState,
       clearAllProjects,
+      ideas,
+      addIdea,
+      updateIdea,
+      deleteIdea,
+      getIdea,
+      importIdeas,
+      applyRemoteIdeas,
       notify,
       toasts,
       dismissToast,
@@ -174,6 +222,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       getProject,
       applyRemoteState,
       clearAllProjects,
+      ideas,
+      addIdea,
+      updateIdea,
+      deleteIdea,
+      getIdea,
+      importIdeas,
+      applyRemoteIdeas,
       notify,
       toasts,
       dismissToast,

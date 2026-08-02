@@ -121,6 +121,19 @@ export const IconClose = ({ size = 18, className }: IconProps) => (
     <path d="M6 6l12 12M18 6L6 18" />
   </svg>
 )
+export const IconIdea = ({ size = 18, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <path d="M9 18h6M10 21h4" />
+    <path d="M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.2 1 2.5h6c0-1.3.3-1.8 1-2.5A6 6 0 0 0 12 3z" />
+  </svg>
+)
+export const IconSprout = ({ size = 18, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 20v-8" />
+    <path d="M12 12C12 8 9 6 5 6c0 4 3 6 7 6z" />
+    <path d="M12 14c0-3 2.5-5 6-5 0 3.5-2.5 5-6 5z" />
+  </svg>
+)
 export const IconSettings = ({ size = 18, className }: IconProps) => (
   <svg {...base(size)} className={className}>
     <circle cx="12" cy="12" r="3" />
