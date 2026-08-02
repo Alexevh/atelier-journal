@@ -26,6 +26,11 @@ export function createSettings(): AppSettings {
       mode: 'simple',
       unit: 'parts',
       maxColors: null,
+      valuePriority: false,
+      goldenRatio: false,
+      requiredIds: [],
+      batchAmount: 0,
+      batchUnit: 'ml',
     },
     sync: {
       enabled: false,

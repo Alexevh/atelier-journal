@@ -188,10 +188,15 @@ export interface AppSettings {
 export interface ColorToolSettings {
   paletteId: string
   targetHex: string
-  engine: 'classic' | 'spectral'
+  engine: 'classic' | 'spectral' | 'km2'
   mode: 'simple' | 'precise'
   unit: 'parts' | 'percent'
   maxColors: number | null
+  valuePriority: boolean
+  goldenRatio: boolean
+  requiredIds: string[]
+  batchAmount: number
+  batchUnit: 'ml' | 'g' | 'drops'
 }
 
 export const SETTINGS_VERSION = 1

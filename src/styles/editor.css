@@ -1168,6 +1168,227 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* full Match layout (parity with the original, paper-styled) */
+.color-grid3 {
+  display: grid;
+  grid-template-columns: 270px 300px 1fr;
+  gap: 1.2rem;
+  align-items: start;
+  margin-top: 1rem;
+}
+@media (max-width: 1040px) {
+  .color-grid3 {
+    grid-template-columns: 1fr;
+  }
+}
+.color-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+@media (max-width: 640px) {
+  .color-grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+.color-target-caption {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.color-target-caption b {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+.color-input-labels {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 0.35rem;
+}
+.color-input-labels span:first-child {
+  width: 44px;
+}
+.analysis-rows {
+  margin-top: 0.8rem;
+}
+.analysis-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--line-soft);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.pill {
+  font-family: var(--font-serif);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.85rem;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.2em 0.8em;
+}
+.recipe-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+.palette-select {
+  width: auto;
+  font-size: 0.82rem;
+}
+.required-tubes {
+  margin-bottom: 0.6rem;
+}
+.required-tubes .mini-label {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+.link-btn {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0;
+  margin: 0.6rem 0 0;
+}
+.options-help {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-style: italic;
+  margin: 0.4rem 0 0;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}
+.toggle-chip {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-family: var(--font-serif);
+  font-size: 0.8rem;
+  padding: 0.4em 0.8em;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.18s var(--ease);
+}
+.toggle-chip:hover {
+  border-color: var(--gold);
+}
+.toggle-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--paper);
+}
+.recipe-amount.strong {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink);
+  min-width: 3.4em;
+}
+.recipe-qty {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--gold);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.recipe-scorecard {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line-soft);
+  flex-wrap: wrap;
+}
+.sc-mix {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: auto;
+}
+.sc-score {
+  text-align: right;
+}
+.sc-score b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: #5a7d54;
+  line-height: 1;
+}
+[data-theme='dark'] .sc-score b {
+  color: #8fb583;
+}
+.sc-score span {
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.value-strip {
+  display: flex;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+}
+.value-step {
+  position: relative;
+  flex: 1;
+  height: 62px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 600;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 4px;
+  transition: transform 0.15s var(--ease);
+}
+.value-step:hover {
+  transform: scale(1.06);
+  z-index: 1;
+}
+.value-step.sel {
+  box-shadow: inset 0 0 0 3px var(--gold);
+  z-index: 2;
+}
+.value-base-dot {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.value-detail {
+  margin-top: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
 /* ---- ideas backlog ---------------------------------------------------- */
 .topbar .btn-icon {
   position: relative;
