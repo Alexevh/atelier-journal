@@ -173,6 +173,59 @@ export async function deleteProjectRemote(id: string): Promise<void> {
   await fsMod.deleteDoc(fsMod.doc(projectsCol(), id)).catch(() => {})
 }
 
+// ---- Colour tool snapshot (single chunked payload, LWW) --------------------
+
+function colorMetaRef() {
+  return fsMod.doc(db!, 'users', uidOrThrow(), 'colorTool', 'meta')
+}
+function colorChunksCol() {
+  return fsMod.collection(db!, 'users', uidOrThrow(), 'colorTool', 'meta', 'chunks')
+}
+
+export interface ColorRemoteMeta {
+  updatedAt: number
+  hash: string
+  n: number
+}
+
+export async function pullColorMeta(): Promise<ColorRemoteMeta | null> {
+  const snap = await fsMod.getDoc(colorMetaRef())
+  return snap.exists() ? (snap.data() as ColorRemoteMeta) : null
+}
+
+export async function uploadColorData(
+  payload: string,
+  updatedAt: number,
+  hash: string,
+): Promise<void> {
+  const parts: string[] = []
+  for (let i = 0; i < payload.length; i += CHUNK) parts.push(payload.slice(i, i + CHUNK))
+  // stale chunks beyond the new count would corrupt reads — remove them first
+  const existing = await fsMod.getDocs(colorChunksCol())
+  const batch = fsMod.writeBatch(db!)
+  existing.forEach((d) => {
+    if (Number(d.id) >= parts.length) batch.delete(d.ref)
+  })
+  parts.forEach((p, i) => {
+    batch.set(fsMod.doc(colorChunksCol(), String(i)), { i, d: p })
+  })
+  batch.set(colorMetaRef(), { updatedAt, hash, n: parts.length })
+  await batch.commit()
+}
+
+export async function downloadColorData(): Promise<{ payload: string; meta: ColorRemoteMeta } | null> {
+  const metaSnap = await fsMod.getDoc(colorMetaRef())
+  if (!metaSnap.exists()) return null
+  const meta = metaSnap.data() as ColorRemoteMeta
+  const snap = await fsMod.getDocs(fsMod.query(colorChunksCol(), fsMod.orderBy('i')))
+  let out = ''
+  snap.forEach((d) => {
+    const data = d.data() as { i: number; d: string }
+    if (data.i < meta.n) out += data.d
+  })
+  return { payload: out, meta }
+}
+
 /** Live listeners. Returns an unsubscribe that detaches both. */
 export function watch(
   onProjects: (projects: Project[]) => void,

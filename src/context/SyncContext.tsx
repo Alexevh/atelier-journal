@@ -19,6 +19,12 @@ import {
   rehydrateImages,
 } from '../sync/images'
 import { computeMerge, sameEntities, Syncable } from '../sync/merge'
+import {
+  applyColorSnapshot,
+  getColorLocalMeta,
+  setColorLocalMeta,
+  snapshotColorData,
+} from '../sync/colorData'
 
 interface SyncCtx {
   status: SyncStatus
@@ -27,6 +33,8 @@ interface SyncCtx {
   configured: boolean
   enabled: boolean
   active: boolean
+  /** Bumps whenever a remote colour-tool snapshot was applied locally. */
+  colorVersion: number
   signIn: () => Promise<void>
   signOut: () => Promise<void>
   syncNow: () => Promise<void>
@@ -241,6 +249,64 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     }
   }, [projectChannel, ideaChannel])
 
+  // ---- colour tool snapshot channel (LWW) --------------------------------
+  const colorSyncingRef = useRef(false)
+  const [colorVersion, setColorVersion] = useState(0)
+
+  const syncColor = useCallback(async (fb: Fb) => {
+    if (colorSyncingRef.current) return
+    colorSyncingRef.current = true
+    try {
+      const snap = await snapshotColorData()
+      const local = getColorLocalMeta()
+      // stamp a fresh local timestamp only when the local state changed
+      const localTs = snap.hash !== local.hash ? Date.now() : local.updatedAt
+      const remote = await fb.pullColorMeta()
+
+      if (remote && remote.hash === snap.hash) {
+        setColorLocalMeta(Math.max(localTs, remote.updatedAt), snap.hash)
+        return
+      }
+      // remote wins on a device that never synced colour data (pull-on-first-
+      // run, like the original app), or when it is simply newer
+      if (remote && (!local.everSynced || remote.updatedAt > localTs)) {
+        const dl = await fb.downloadColorData()
+        if (dl && dl.payload) {
+          await applyColorSnapshot(dl.payload)
+          setColorLocalMeta(dl.meta.updatedAt, dl.meta.hash)
+          setColorVersion((v) => v + 1)
+        }
+        return
+      }
+      // local wins (or nothing remote yet): upload the snapshot
+      await fb.uploadColorData(snap.payload, localTs, snap.hash)
+      setColorLocalMeta(localTs, snap.hash)
+    } finally {
+      colorSyncingRef.current = false
+    }
+  }, [])
+
+  // periodic + on-focus colour sync while the engine is live
+  useEffect(() => {
+    const tick = async () => {
+      if (!activeRef.current || document.visibilityState !== 'visible') return
+      try {
+        const fb = await import('../sync/firebase')
+        await syncColor(fb)
+      } catch (e) {
+        if (navigator.onLine) {
+          setError(`color: ${e instanceof Error ? e.message : String(e)}`)
+        }
+      }
+    }
+    const iv = window.setInterval(tick, 20_000)
+    window.addEventListener('focus', tick)
+    return () => {
+      window.clearInterval(iv)
+      window.removeEventListener('focus', tick)
+    }
+  }, [syncColor])
+
   // ---- push local changes (both channels) -------------------------------
   const pushLocalChanges = useCallback(async () => {
     if (!activeRef.current || pushingRef.current) return
@@ -308,6 +374,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       activeRef.current = true
       await reconcile()
       await pushLocalChanges()
+      try {
+        await syncColor(fb)
+      } catch (e) {
+        setError(`color: ${e instanceof Error ? e.message : String(e)}`)
+      }
       const onErr = (err: Error) => {
         if (!navigator.onLine) setStatus('offline')
         else {
@@ -351,7 +422,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         setError(err instanceof Error ? err.message : String(err))
       }
     }
-  }, [projectChannel, ideaChannel, reconcile, pushLocalChanges])
+  }, [projectChannel, ideaChannel, reconcile, pushLocalChanges, syncColor])
 
   // react to settings (enabled / config) changes
   useEffect(() => {
@@ -457,6 +528,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       ideaRemote.current = ir
       await reconcile()
       await pushLocalChanges()
+      try {
+        await syncColor(fb)
+      } catch (e) {
+        setError(`color: ${e instanceof Error ? e.message : String(e)}`)
+      }
       if (activeRef.current) setStatus('synced')
     } catch (err) {
       if (!navigator.onLine) setStatus('offline')
@@ -465,13 +541,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         setError(err instanceof Error ? err.message : String(err))
       }
     }
-  }, [projectChannel, ideaChannel, reconcile, pushLocalChanges])
+  }, [projectChannel, ideaChannel, reconcile, pushLocalChanges, syncColor])
 
   const active = status === 'synced' || status === 'syncing' || status === 'offline'
 
   const value = useMemo<SyncCtx>(
-    () => ({ status, email, error, configured, enabled, active, signIn, signOut, syncNow }),
-    [status, email, error, configured, enabled, active, signIn, signOut, syncNow],
+    () => ({ status, email, error, configured, enabled, active, colorVersion, signIn, signOut, syncNow }),
+    [status, email, error, configured, enabled, active, colorVersion, signIn, signOut, syncNow],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

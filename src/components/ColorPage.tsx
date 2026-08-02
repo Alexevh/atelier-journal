@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useI18n } from '../i18n/I18nContext'
+import { useSync } from '../context/SyncContext'
 import { setLang } from '@/lib/i18n'
 import PigmentApp from './PigmentApp'
 import { IconArrowLeft } from './Icons'
@@ -11,6 +12,7 @@ import { IconArrowLeft } from './Icons'
  */
 export default function ColorPage({ onBack }: { onBack: () => void }) {
   const app = useI18n()
+  const { colorVersion } = useSync()
 
   // Atelier language → ported tool
   useEffect(() => {
@@ -22,7 +24,9 @@ export default function ColorPage({ onBack }: { onBack: () => void }) {
       <button className="btn btn-ghost" onClick={onBack} style={{ marginBottom: '0.6rem' }}>
         <IconArrowLeft size={16} /> {app.t('editor.back')}
       </button>
-      <PigmentApp onSetLang={(l) => app.setLang(l)} />
+      {/* key: remount when a remote colour snapshot was applied so palettes,
+          logbook and calibration re-read the fresh local state */}
+      <PigmentApp key={colorVersion} onSetLang={(l) => app.setLang(l)} />
     </div>
   )
 }
