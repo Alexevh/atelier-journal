@@ -1432,7 +1432,7 @@
 }
 .idea-cover {
   position: relative;
-  height: 150px;
+  height: 220px;
   background: var(--paper-2);
   flex: none;
 }
