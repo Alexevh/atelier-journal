@@ -8,6 +8,7 @@ import { exportLibrary, parseImport, readFileAsText } from '../utils/transfer'
 import {
   IconCloud,
   IconDownload,
+  IconDroplet,
   IconIdea,
   IconMoon,
   IconPalette,
@@ -20,9 +21,10 @@ interface Props {
   onHome: () => void
   onSettings: () => void
   onIdeas: () => void
+  onColor: () => void
 }
 
-export default function TopBar({ onHome, onSettings, onIdeas }: Props) {
+export default function TopBar({ onHome, onSettings, onIdeas, onColor }: Props) {
   const { theme, toggle } = useTheme()
   const { lang, setLang, t } = useI18n()
   const { projects, ideas, importProjects, importIdeas, notify } = useApp()
@@ -130,6 +132,14 @@ export default function TopBar({ onHome, onSettings, onIdeas }: Props) {
         ))}
       </div>
 
+      <button
+        className="btn btn-icon"
+        onClick={onColor}
+        title={t('color.open')}
+        aria-label={t('color.open')}
+      >
+        <IconDroplet size={18} />
+      </button>
       <button
         className="btn btn-icon"
         onClick={onIdeas}

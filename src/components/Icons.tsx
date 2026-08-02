@@ -127,6 +127,11 @@ export const IconIdea = ({ size = 18, className }: IconProps) => (
     <path d="M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.2 1 2.5h6c0-1.3.3-1.8 1-2.5A6 6 0 0 0 12 3z" />
   </svg>
 )
+export const IconDroplet = ({ size = 18, className }: IconProps) => (
+  <svg {...base(size)} className={className}>
+    <path d="M12 3s6 5.5 6 10a6 6 0 0 1-12 0c0-4.5 6-10 6-10z" />
+  </svg>
+)
 export const IconSprout = ({ size = 18, className }: IconProps) => (
   <svg {...base(size)} className={className}>
     <path d="M12 20v-8" />

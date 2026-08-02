@@ -19,6 +19,14 @@ export function createSettings(): AppSettings {
     defaultMaterialsSummary: t('default.materialsSummary'),
     backupReminderDays: 14,
     customFrames: [],
+    colorTool: {
+      paletteId: 'default-oil',
+      targetHex: '#927073',
+      engine: 'classic',
+      mode: 'simple',
+      unit: 'parts',
+      maxColors: null,
+    },
     sync: {
       enabled: false,
       provider: 'firebase',
@@ -34,6 +42,7 @@ export function mergeSettings(partial: Partial<AppSettings> | null): AppSettings
   return {
     ...base,
     ...partial,
+    colorTool: { ...base.colorTool, ...(partial.colorTool ?? {}) },
     sync: { ...base.sync, ...(partial.sync ?? {}) },
   }
 }

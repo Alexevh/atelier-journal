@@ -178,8 +178,20 @@ export interface AppSettings {
   backupReminderDays: number
   // User-imported frames for the Frame Studio.
   customFrames: CustomFrame[]
+  // Colour / pigment-matching tool preferences.
+  colorTool: ColorToolSettings
   // Optional cloud sync.
   sync: SyncSettings
+}
+
+/** Preferences for the Colour (pigment matching) tool. */
+export interface ColorToolSettings {
+  paletteId: string
+  targetHex: string
+  engine: 'classic' | 'spectral'
+  mode: 'simple' | 'precise'
+  unit: 'parts' | 'percent'
+  maxColors: number | null
 }
 
 export const SETTINGS_VERSION = 1
