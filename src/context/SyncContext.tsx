@@ -121,18 +121,33 @@ async function reconcileChannel<T extends Syncable>(fb: Fb, ch: Channel<T>): Pro
 async function pushChannel<T extends Syncable>(fb: Fb, ch: Channel<T>): Promise<void> {
   const local = ch.getLocal()
   const localIds = new Set(local.map((p) => p.id))
+  // Isolate each item: one document that fails to serialise/upload must NOT
+  // block every other item in the collection from syncing. Collect failures
+  // and report them together so a single bad record is visible, not silent.
+  const failures: string[] = []
   for (const p of local) {
     const known = ch.syncedRef.current.get(p.id) ?? -1
     if (p.updatedAt > known) {
-      await ch.push(fb, p)
-      ch.syncedRef.current.set(p.id, p.updatedAt)
+      try {
+        await ch.push(fb, p)
+        ch.syncedRef.current.set(p.id, p.updatedAt)
+      } catch (e) {
+        failures.push(`${p.id}: ${e instanceof Error ? e.message : String(e)}`)
+      }
     }
   }
   for (const id of [...ch.syncedRef.current.keys()]) {
     if (!localIds.has(id)) {
-      await ch.del(fb, id)
-      ch.syncedRef.current.delete(id)
+      try {
+        await ch.del(fb, id)
+        ch.syncedRef.current.delete(id)
+      } catch (e) {
+        failures.push(`del ${id}: ${e instanceof Error ? e.message : String(e)}`)
+      }
     }
+  }
+  if (failures.length) {
+    throw new Error(`${failures.length} item(s) failed — ${failures.slice(0, 3).join(' · ')}`)
   }
 }
 

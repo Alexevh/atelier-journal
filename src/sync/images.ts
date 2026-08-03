@@ -58,9 +58,14 @@ export function rehydrateImages(p: Project, dataUrls: Map<string, string>): Proj
 }
 
 // ---- ideas (flat images array + per-entry images) -------------------------
+// Every accessor is defensive: an idea or entry whose `images` array is missing
+// (older records, partial imports) must never throw here — a single bad value
+// would otherwise abort the whole collection's push and silently stall sync.
+
+const imgs = (a?: StoredImage[]): StoredImage[] => (Array.isArray(a) ? a.filter(Boolean) : [])
 
 export function collectIdeaImages(i: Idea): StoredImage[] {
-  return [...i.images, ...(i.entries ?? []).flatMap((e) => e.images)]
+  return [...imgs(i.images), ...(i.entries ?? []).flatMap((e) => imgs(e.images))]
 }
 
 function stripOne(img: StoredImage): StoredImage {
@@ -70,8 +75,8 @@ function stripOne(img: StoredImage): StoredImage {
 export function stripIdeaImages(i: Idea): Idea {
   return {
     ...i,
-    images: i.images.map(stripOne),
-    entries: (i.entries ?? []).map((e) => ({ ...e, images: e.images.map(stripOne) })),
+    images: imgs(i.images).map(stripOne),
+    entries: (i.entries ?? []).map((e) => ({ ...e, images: imgs(e.images).map(stripOne) })),
   }
 }
 
@@ -82,7 +87,7 @@ export function rehydrateIdeaImages(i: Idea, dataUrls: Map<string, string>): Ide
   })
   return {
     ...i,
-    images: i.images.map(fill),
-    entries: (i.entries ?? []).map((e) => ({ ...e, images: e.images.map(fill) })),
+    images: imgs(i.images).map(fill),
+    entries: (i.entries ?? []).map((e) => ({ ...e, images: imgs(e.images).map(fill) })),
   }
 }
