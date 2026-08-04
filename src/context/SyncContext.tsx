@@ -136,8 +136,15 @@ async function pushChannel<T extends Syncable>(fb: Fb, ch: Channel<T>): Promise<
       }
     }
   }
+  // Safety net: never propagate deletions from an EMPTY local snapshot. An
+  // empty local with a non-empty synced set almost always means local state
+  // hasn't finished loading (or a transient race), not that the user deleted
+  // everything. Wrongly skipping a real "deleted all" is harmless (the data
+  // survives in the cloud and re-propagates); wrongly deleting is data loss.
+  const canDelete = local.length > 0
   for (const id of [...ch.syncedRef.current.keys()]) {
     if (!localIds.has(id)) {
+      if (!canDelete) continue
       try {
         await ch.del(fb, id)
         ch.syncedRef.current.delete(id)
@@ -201,7 +208,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const projectChannel = useMemo<Channel<Project>>(
     () => ({
       getLocal: () => projectsRef.current,
-      apply: applyRemoteState,
+      // Update the ref SYNCHRONOUSLY as well as the React state. Otherwise the
+      // push that runs right after a reconcile reads a stale local snapshot and
+      // the delete loop tombstones items reconcile just merged from remote.
+      apply: (items) => {
+        projectsRef.current = items
+        applyRemoteState(items)
+      },
       collectImages: collectProjectImages,
       rehydrate: rehydrateImages,
       remoteRef: projRemote,
@@ -216,7 +229,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const ideaChannel = useMemo<Channel<Idea>>(
     () => ({
       getLocal: () => ideasRef.current,
-      apply: applyRemoteIdeas,
+      apply: (items) => {
+        ideasRef.current = items
+        applyRemoteIdeas(items)
+      },
       collectImages: collectIdeaImages,
       rehydrate: rehydrateIdeaImages,
       remoteRef: ideaRemote,
