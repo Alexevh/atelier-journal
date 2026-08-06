@@ -139,6 +139,11 @@ export interface AppData {
   version: number
   projects: Project[]
   ideas: Idea[]
+  /** Explicit deletion markers, recorded when the USER deletes locally. The
+   *  sync engine pushes these (never inferring deletions from absence) and
+   *  feeds them into the merge so a deleted item can't be resurrected. */
+  deletedProjects?: Tombstone[]
+  deletedIdeas?: Tombstone[]
 }
 
 export const APP_DATA_VERSION = 2

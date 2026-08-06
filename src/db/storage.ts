@@ -1,4 +1,4 @@
-import { AppData, APP_DATA_VERSION, AppSettings, Idea, Project } from '../types'
+import { AppData, APP_DATA_VERSION, AppSettings, Idea, Project, Tombstone } from '../types'
 
 // A tiny promise-based IndexedDB wrapper. Falls back to localStorage when
 // IndexedDB is unavailable (private mode on some browsers). Both keep all data
@@ -56,8 +56,11 @@ async function idbSet<T>(key: string, value: T): Promise<void> {
 }
 
 function emptyData(): AppData {
-  return { version: APP_DATA_VERSION, projects: [], ideas: [] }
+  return { version: APP_DATA_VERSION, projects: [], ideas: [], deletedProjects: [], deletedIdeas: [] }
 }
+
+const tombs = (v: unknown): Tombstone[] =>
+  Array.isArray(v) ? (v.filter((t) => t && typeof (t as Tombstone).id === 'string') as Tombstone[]) : []
 
 /** Defensive normaliser — migrates/repairs loaded data into a valid shape. */
 function normalize(raw: unknown): AppData {
@@ -69,6 +72,8 @@ function normalize(raw: unknown): AppData {
     projects: data.projects as Project[],
     // v1 → v2: ideas backlog added
     ideas: Array.isArray(data.ideas) ? (data.ideas as Idea[]) : [],
+    deletedProjects: tombs(data.deletedProjects),
+    deletedIdeas: tombs(data.deletedIdeas),
   }
 }
 
@@ -98,7 +103,13 @@ export async function loadData(): Promise<AppData> {
 }
 
 export async function saveData(data: AppData): Promise<void> {
-  const payload: AppData = { version: APP_DATA_VERSION, projects: data.projects, ideas: data.ideas }
+  const payload: AppData = {
+    version: APP_DATA_VERSION,
+    projects: data.projects,
+    ideas: data.ideas,
+    deletedProjects: tombs(data.deletedProjects),
+    deletedIdeas: tombs(data.deletedIdeas),
+  }
   try {
     if (hasIndexedDB()) {
       await idbSet(DATA_KEY, payload)

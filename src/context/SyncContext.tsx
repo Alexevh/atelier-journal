@@ -47,11 +47,15 @@ type Fb = typeof import('../sync/firebase')
 /** A synced entity stream (projects or ideas) with its engine state + IO. */
 interface Channel<T extends Syncable> {
   getLocal: () => T[]
+  /** Explicit local deletion markers (recorded when the user deletes). */
+  getLocalTombstones: () => Tombstone[]
   apply: (items: T[]) => void
   collectImages: (item: T) => StoredImage[]
   rehydrate: (item: T, imgs: Map<string, string>) => T
   remoteRef: MutableRefObject<{ items: T[]; tombstones: Tombstone[] }>
   syncedRef: MutableRefObject<Map<string, number>>
+  /** Ids whose deletion we've already published this session (id → deletedAt). */
+  tombPushedRef: MutableRefObject<Map<string, number>>
   pull: (fb: Fb) => Promise<{ items: T[]; tombstones: Tombstone[] }>
   push: (fb: Fb, item: T) => Promise<void>
   del: (fb: Fb, id: string) => Promise<void>
@@ -65,9 +69,22 @@ interface Channel<T extends Syncable> {
 
 // ---- generic per-channel reconcile / push (remote <-> local) --------------
 
+/** Newest deletion per id across remote + local tombstones. */
+function mergeTombstones(remote: Tombstone[], local: Tombstone[]): Tombstone[] {
+  const m = new Map<string, number>()
+  for (const t of [...remote, ...local]) {
+    const prev = m.get(t.id) ?? -1
+    if (t.deletedAt > prev) m.set(t.id, t.deletedAt)
+  }
+  return [...m.entries()].map(([id, deletedAt]) => ({ id, deletedAt }))
+}
+
 async function reconcileChannel<T extends Syncable>(fb: Fb, ch: Channel<T>): Promise<void> {
   const local = ch.getLocal()
-  const { items: remote, tombstones } = ch.remoteRef.current
+  const { items: remote, tombstones: remoteTombs } = ch.remoteRef.current
+  // Local tombstones join the merge so a deletion made here can't be undone by
+  // a stale device re-pushing the old item, and stays applied locally too.
+  const tombstones = mergeTombstones(remoteTombs, ch.getLocalTombstones())
   const { resultMap } = computeMerge(local, remote, tombstones)
 
   // data we already hold locally, so we never re-download what we have
@@ -120,12 +137,13 @@ async function reconcileChannel<T extends Syncable>(fb: Fb, ch: Channel<T>): Pro
 
 async function pushChannel<T extends Syncable>(fb: Fb, ch: Channel<T>): Promise<void> {
   const local = ch.getLocal()
-  const localIds = new Set(local.map((p) => p.id))
+  const deleted = new Set(ch.getLocalTombstones().map((t) => t.id))
   // Isolate each item: one document that fails to serialise/upload must NOT
   // block every other item in the collection from syncing. Collect failures
   // and report them together so a single bad record is visible, not silent.
   const failures: string[] = []
   for (const p of local) {
+    if (deleted.has(p.id)) continue // a locally-deleted item is never re-uploaded
     const known = ch.syncedRef.current.get(p.id) ?? -1
     if (p.updatedAt > known) {
       try {
@@ -136,21 +154,18 @@ async function pushChannel<T extends Syncable>(fb: Fb, ch: Channel<T>): Promise<
       }
     }
   }
-  // Safety net: never propagate deletions from an EMPTY local snapshot. An
-  // empty local with a non-empty synced set almost always means local state
-  // hasn't finished loading (or a transient race), not that the user deleted
-  // everything. Wrongly skipping a real "deleted all" is harmless (the data
-  // survives in the cloud and re-propagates); wrongly deleting is data loss.
-  const canDelete = local.length > 0
-  for (const id of [...ch.syncedRef.current.keys()]) {
-    if (!localIds.has(id)) {
-      if (!canDelete) continue
-      try {
-        await ch.del(fb, id)
-        ch.syncedRef.current.delete(id)
-      } catch (e) {
-        failures.push(`del ${id}: ${e instanceof Error ? e.message : String(e)}`)
-      }
+  // Deletions are EXPLICIT only: publish a tombstone for each id the user
+  // actually deleted locally. We never infer a deletion from an item merely
+  // being absent from the local snapshot — that inference caused cross-device
+  // data loss whenever the snapshot was stale or still loading.
+  for (const t of ch.getLocalTombstones()) {
+    if ((ch.tombPushedRef.current.get(t.id) ?? -1) >= t.deletedAt) continue
+    try {
+      await ch.del(fb, t.id)
+      ch.tombPushedRef.current.set(t.id, t.deletedAt)
+      ch.syncedRef.current.delete(t.id)
+    } catch (e) {
+      failures.push(`del ${t.id}: ${e instanceof Error ? e.message : String(e)}`)
     }
   }
   if (failures.length) {
@@ -171,7 +186,8 @@ function isConfigured(cfg: import('../types').FirebaseConfig | null): boolean {
 }
 
 export function SyncProvider({ children }: { children: ReactNode }) {
-  const { projects, ideas, applyRemoteState, applyRemoteIdeas } = useApp()
+  const { projects, ideas, deletedProjects, deletedIdeas, applyRemoteState, applyRemoteIdeas } =
+    useApp()
   const { settings } = useSettings()
 
   const cfg = settings.sync.firebaseConfig
@@ -185,18 +201,28 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   // local snapshots (refs so engine reads latest without effect churn)
   const projectsRef = useRef<Project[]>(projects)
   const ideasRef = useRef<Idea[]>(ideas)
+  const projTombRef = useRef<Tombstone[]>(deletedProjects)
+  const ideaTombRef = useRef<Tombstone[]>(deletedIdeas)
   useEffect(() => {
     projectsRef.current = projects
   }, [projects])
   useEffect(() => {
     ideasRef.current = ideas
   }, [ideas])
+  useEffect(() => {
+    projTombRef.current = deletedProjects
+  }, [deletedProjects])
+  useEffect(() => {
+    ideaTombRef.current = deletedIdeas
+  }, [deletedIdeas])
 
   // per-channel engine state
   const projRemote = useRef<{ items: Project[]; tombstones: Tombstone[] }>({ items: [], tombstones: [] })
   const projSynced = useRef<Map<string, number>>(new Map())
+  const projTombPushed = useRef<Map<string, number>>(new Map())
   const ideaRemote = useRef<{ items: Idea[]; tombstones: Tombstone[] }>({ items: [], tombstones: [] })
   const ideaSynced = useRef<Map<string, number>>(new Map())
+  const ideaTombPushed = useRef<Map<string, number>>(new Map())
 
   const activeRef = useRef(false)
   const reconcilingRef = useRef(false)
@@ -215,10 +241,12 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         projectsRef.current = items
         applyRemoteState(items)
       },
+      getLocalTombstones: () => projTombRef.current,
       collectImages: collectProjectImages,
       rehydrate: rehydrateImages,
       remoteRef: projRemote,
       syncedRef: projSynced,
+      tombPushedRef: projTombPushed,
       pull: (fb) => fb.pullAll().then((r) => ({ items: r.projects, tombstones: r.tombstones })),
       push: (fb, item) => fb.pushProject(item),
       del: (fb, id) => fb.deleteProjectRemote(id),
@@ -229,6 +257,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const ideaChannel = useMemo<Channel<Idea>>(
     () => ({
       getLocal: () => ideasRef.current,
+      getLocalTombstones: () => ideaTombRef.current,
       apply: (items) => {
         ideasRef.current = items
         applyRemoteIdeas(items)
@@ -237,6 +266,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       rehydrate: rehydrateIdeaImages,
       remoteRef: ideaRemote,
       syncedRef: ideaSynced,
+      tombPushedRef: ideaTombPushed,
       pull: (fb) => fb.pullIdeas().then((r) => ({ items: r.ideas, tombstones: r.tombstones })),
       push: (fb, item) => fb.pushIdea(item),
       del: (fb, id) => fb.deleteIdeaRemote(id),
@@ -368,11 +398,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     }
   }, [projectChannel, ideaChannel])
 
-  // push whenever local projects or ideas change (while sync is active)
+  // push whenever local projects, ideas or deletions change (while active)
   useEffect(() => {
     if (activeRef.current) void pushLocalChanges()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects, ideas])
+  }, [projects, ideas, deletedProjects, deletedIdeas])
 
   const teardown = useCallback(() => {
     activeRef.current = false
@@ -382,6 +412,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     unauthRef.current = null
     projSynced.current.clear()
     ideaSynced.current.clear()
+    projTombPushed.current.clear()
+    ideaTombPushed.current.clear()
     projRemote.current = { items: [], tombstones: [] }
     ideaRemote.current = { items: [], tombstones: [] }
   }, [])
@@ -544,6 +576,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     unwatchRef.current = null
     projSynced.current.clear()
     ideaSynced.current.clear()
+    projTombPushed.current.clear()
+    ideaTombPushed.current.clear()
     setEmail(null)
     setStatus(enabled && configured ? 'signed_out' : enabled ? 'unconfigured' : 'disabled')
   }, [enabled, configured])
