@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext'
 import { useI18n } from '../i18n/I18nContext'
 import { LANGUAGES, Lang } from '../i18n'
 import { applyColorSnapshot } from '../sync/colorData'
+import { APP_VERSION } from '../version'
 import { mergeSettings } from '../utils/factory'
 import { exportLibrary, parseImport, readFileAsText } from '../utils/transfer'
 import {
@@ -70,7 +71,9 @@ export default function TopBar({ onHome, onSettings, onIdeas, onColor, onHelp }:
           <IconPalette size={20} />
         </span>
         <span>
-          <span className="topbar-title">Atelier</span>
+          <span className="topbar-title">
+            Atelier <span className="topbar-version">v{APP_VERSION}</span>
+          </span>
           <span className="topbar-sub" style={{ display: 'block' }}>
             {t('app.brandSub')}
           </span>

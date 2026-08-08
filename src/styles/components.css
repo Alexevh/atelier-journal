@@ -58,6 +58,19 @@
   letter-spacing: 0.04em;
   line-height: 1;
 }
+.topbar-version {
+  font-family: var(--font-sans, inherit);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--gold, var(--faint));
+  border: 1px solid color-mix(in srgb, var(--gold, var(--faint)) 45%, transparent);
+  border-radius: 999px;
+  padding: 0.05em 0.45em;
+  vertical-align: middle;
+  position: relative;
+  top: -0.15em;
+}
 .topbar-sub {
   font-size: 0.62rem;
   letter-spacing: 0.34em;

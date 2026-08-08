@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Upload,
   Search,
@@ -631,62 +632,71 @@ export function ImageSampler({
         </div>
       </div>
 
-      {/* Floating magnifier — follows the cursor while hovering the image */}
-      <canvas
-        ref={loupeRef}
-        width={LOUPE}
-        height={LOUPE}
-        className={cn(
-          "pointer-events-none fixed z-50 rounded-full border-2 border-white shadow-xl",
-          loupeOn && loupePos ? "block" : "hidden"
-        )}
-        style={loupePos ? { left: loupePos.x, top: loupePos.y } : undefined}
-      />
-
-      {/* Optional probe: color under the cursor (left) next to the `probe` color
-          (right), flanking the pointer for direct comparison */}
-      {probe && probePos && (
+      {/* Cursor-following overlays are portaled to <body>: they use fixed
+          (viewport) coordinates, and any transformed ancestor (e.g. the page's
+          fade-up animation) would otherwise make `fixed` resolve against that
+          ancestor, offsetting them away from the pointer / off the image. */}
+      {createPortal(
         <>
-          {hover && (
-            <span
-              className="pointer-events-none fixed z-50 h-7 w-7 -translate-x-full -translate-y-1/2 rounded border-2 border-white shadow-md"
-              style={{
-                left: probePos.x - 14,
-                top: probePos.y,
-                backgroundColor: rgbToHex(hover),
-              }}
-            />
-          )}
-          <span
-            className="pointer-events-none fixed z-50 h-7 w-7 -translate-y-1/2 rounded border-2 border-white shadow-md"
-            style={{
-              left: probePos.x + 14,
-              top: probePos.y,
-              backgroundColor: probe,
-            }}
+          {/* Floating magnifier — follows the cursor while hovering the image */}
+          <canvas
+            ref={loupeRef}
+            width={LOUPE}
+            height={LOUPE}
+            className={cn(
+              "pointer-events-none fixed z-50 rounded-full border-2 border-white shadow-xl",
+              loupeOn && loupePos ? "block" : "hidden"
+            )}
+            style={loupePos ? { left: loupePos.x, top: loupePos.y } : undefined}
           />
-        </>
-      )}
 
-      {/* Brush-size ring: shows the area a click will average (when radius > 0) */}
-      {sampleR > 0 &&
-        brushPos &&
-        (() => {
-          const cv = canvasRef.current;
-          const pxPerCanvas = cv ? (cv.clientWidth / cv.width) * zoom : zoom;
-          const d = Math.max(6, (sampleR * 2 + 1) * pxPerCanvas);
-          return (
-            <span
-              className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/90 shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
-              style={{
-                left: brushPos.x,
-                top: brushPos.y,
-                width: d,
-                height: d,
-              }}
-            />
-          );
-        })()}
+          {/* Optional probe: color under the cursor (left) next to the `probe`
+              color (right), flanking the pointer for direct comparison */}
+          {probe && probePos && (
+            <>
+              {hover && (
+                <span
+                  className="pointer-events-none fixed z-50 h-7 w-7 -translate-x-full -translate-y-1/2 rounded border-2 border-white shadow-md"
+                  style={{
+                    left: probePos.x - 14,
+                    top: probePos.y,
+                    backgroundColor: rgbToHex(hover),
+                  }}
+                />
+              )}
+              <span
+                className="pointer-events-none fixed z-50 h-7 w-7 -translate-y-1/2 rounded border-2 border-white shadow-md"
+                style={{
+                  left: probePos.x + 14,
+                  top: probePos.y,
+                  backgroundColor: probe,
+                }}
+              />
+            </>
+          )}
+
+          {/* Brush-size ring: the area a click will average (when radius > 0) */}
+          {sampleR > 0 &&
+            brushPos &&
+            (() => {
+              const cv = canvasRef.current;
+              const pxPerCanvas = cv ? (cv.clientWidth / cv.width) * zoom : zoom;
+              const d = Math.max(6, (sampleR * 2 + 1) * pxPerCanvas);
+              return (
+                <span
+                  className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/90 shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
+                  style={{
+                    left: brushPos.x,
+                    top: brushPos.y,
+                    width: d,
+                    height: d,
+                  }}
+                />
+              );
+            })()}
+        </>,
+        document.body
+      )}
     </div>
   );
 }
