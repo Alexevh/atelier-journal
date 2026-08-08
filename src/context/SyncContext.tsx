@@ -25,6 +25,7 @@ import {
   setColorLocalMeta,
   snapshotColorData,
 } from '../sync/colorData'
+import { syncColorImages } from '../sync/colorImages'
 
 interface SyncCtx {
   status: SyncStatus
@@ -318,6 +319,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     if (colorSyncingRef.current) return
     colorSyncingRef.current = true
     try {
+      // Active images (Image/Compare/Mix/Extract slots) sync per-slot and must
+      // run regardless of the snapshot branch below (which has early returns).
+      try {
+        await syncColorImages(fb)
+      } catch (e) {
+        setError(`color-img: ${e instanceof Error ? e.message : String(e)}`)
+      }
       const snap = await snapshotColorData()
       const local = getColorLocalMeta()
       // stamp a fresh local timestamp only when the local state changed
@@ -362,9 +370,19 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     }
     const iv = window.setInterval(tick, 20_000)
     window.addEventListener('focus', tick)
+    // Push a freshly captured/cleared active image promptly (debounced so a
+    // burst of slot writes — or a cloud pull's own events — coalesce).
+    let imgTimer: number | undefined
+    const onImg = () => {
+      window.clearTimeout(imgTimer)
+      imgTimer = window.setTimeout(tick, 1200)
+    }
+    window.addEventListener('pm-image-changed', onImg)
     return () => {
       window.clearInterval(iv)
       window.removeEventListener('focus', tick)
+      window.removeEventListener('pm-image-changed', onImg)
+      window.clearTimeout(imgTimer)
     }
   }, [syncColor])
 

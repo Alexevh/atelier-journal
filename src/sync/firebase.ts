@@ -226,6 +226,41 @@ export async function downloadColorData(): Promise<{ payload: string; meta: Colo
   return { payload: out, meta }
 }
 
+// ---- Colour tool active images (one doc per slot, per-slot LWW) ------------
+// The Image/Compare/Mix/Extract/… tabs keep their active photo in a local
+// IndexedDB store; these mirror each slot to its own Firestore doc so a capture
+// on one device shows up on the others. A tiny meta doc holds slot→updatedAt so
+// a poll only downloads the images that actually changed.
+
+function colorImagesMetaRef() {
+  return fsMod.doc(db!, 'users', uidOrThrow(), 'colorTool', 'imagesMeta')
+}
+function colorImagesCol() {
+  return fsMod.collection(db!, 'users', uidOrThrow(), 'colorImages')
+}
+
+export async function pullColorImageMeta(): Promise<Record<string, number>> {
+  const snap = await fsMod.getDoc(colorImagesMetaRef())
+  if (!snap.exists()) return {}
+  const data = snap.data() as { slots?: Record<string, number> }
+  return data.slots ?? {}
+}
+
+export async function uploadColorImage(slot: string, dataURL: string, updatedAt: number): Promise<void> {
+  await fsMod.setDoc(fsMod.doc(colorImagesCol(), slot), { slot, dataURL, updatedAt })
+  // merge:true keeps the other slots' entries in the meta map intact
+  await fsMod.setDoc(colorImagesMetaRef(), { slots: { [slot]: updatedAt } }, { merge: true })
+}
+
+export async function downloadColorImage(
+  slot: string,
+): Promise<{ dataURL: string; updatedAt: number } | null> {
+  const snap = await fsMod.getDoc(fsMod.doc(colorImagesCol(), slot))
+  if (!snap.exists()) return null
+  const data = snap.data() as { dataURL?: string; updatedAt?: number }
+  return data.dataURL ? { dataURL: data.dataURL, updatedAt: data.updatedAt ?? 0 } : null
+}
+
 /** Live listeners. Returns an unsubscribe that detaches both. */
 export function watch(
   onProjects: (projects: Project[]) => void,
