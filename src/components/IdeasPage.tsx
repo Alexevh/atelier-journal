@@ -6,6 +6,7 @@ import { formatLongDate } from '../utils/date'
 import BrushDivider from './BrushDivider'
 import {
   IconArrowLeft,
+  IconDoc,
   IconIdea,
   IconImage,
   IconPlus,
@@ -23,10 +24,24 @@ interface Props {
 type Filter = 'all' | IdeaStatus
 
 export default function IdeasPage({ onBack, onOpenProject, onOpenIdea }: Props) {
-  const { ideas, addIdea, deleteIdea, getProject } = useApp()
-  const { t } = useI18n()
+  const { ideas, addIdea, deleteIdea, getProject, notify } = useApp()
+  const { t, lang } = useI18n()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
+  const [exporting, setExporting] = useState(false)
+
+  const exportBook = async () => {
+    setExporting(true)
+    try {
+      const { exportIdeasBookPdf } = await import('../utils/pdf/ideasBook')
+      await exportIdeasBookPdf(ideas, lang)
+      notify(t('ideasPdf.done'), 'success')
+    } catch {
+      notify(t('notify.pdfError'), 'error')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -84,6 +99,11 @@ export default function IdeasPage({ onBack, onOpenProject, onOpenIdea }: Props) 
             </button>
           ))}
         </div>
+        {ideas.length > 0 && (
+          <button className="btn btn-sm" onClick={exportBook} disabled={exporting}>
+            <IconDoc size={15} /> {exporting ? t('common.generating') : t('ideasPdf.export')}
+          </button>
+        )}
         <button className="btn btn-primary" onClick={handleNew}>
           <IconPlus size={16} /> {t('ideas.new')}
         </button>
