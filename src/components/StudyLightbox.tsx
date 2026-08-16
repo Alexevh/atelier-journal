@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { StoredImage } from '../types'
 import { useI18n } from '../i18n/I18nContext'
 import { IconChevron, IconClose } from './Icons'
@@ -29,13 +30,22 @@ export default function StudyLightbox({ images, startIndex = 0, onClose }: Props
       if (e.key === 'ArrowLeft') setIndex((i) => (i - 1 + images.length) % images.length)
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    // Lock background scroll while the fullscreen viewer is open.
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+    }
   }, [images.length, onClose])
 
   if (!images.length) return null
   const current = images[Math.min(index, images.length - 1)]
 
-  return (
+  // Portal to <body>: the overlay is position:fixed, but a transformed ancestor
+  // (the page's fade-up) would otherwise make `fixed` resolve against it — so it
+  // rendered off-centre and the user had to scroll to find the image.
+  return createPortal(
     <div className="study" role="dialog" aria-modal="true">
       <div className="study-toolbar" onClick={(e) => e.stopPropagation()}>
         <button
@@ -123,6 +133,7 @@ export default function StudyLightbox({ images, startIndex = 0, onClose }: Props
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
