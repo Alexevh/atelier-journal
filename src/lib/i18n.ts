@@ -382,6 +382,12 @@ const en: Dict = {
     add: "Add a tube…",
     note: "The recipe is forced to keep each pinned tube at a meaningful share (≥2%). The match % honestly reflects the constrained mix — a hard pin can cost a little accuracy.",
   },
+  excluded: {
+    title: "Excluded tubes",
+    hint: "Keep specific tubes OUT of every suggestion — e.g. leave black out so mixes reach darks and greys chromatically instead. Excluded tubes are ignored by recipes, the coach and variations.",
+    add: "Exclude a tube…",
+    note: "Excluded tubes are never used in suggestions. The match % reflects the smaller palette — excluding a strong tube (like black) can cost a little accuracy on very dark neutrals.",
+  },
   manual: {
     title: "User manual (PDF)",
     desc: "The complete guide to every feature — with worked examples and illustrations drawn from the real mixing engine. Generated in your current language.",
@@ -1314,6 +1320,12 @@ const es: Dict = {
     hint: "Forzá tubos específicos dentro de la receta — vos conocés tu base (p. ej. una piel desde Pale Rose Blush agrisada con Raw Umber) y querés que la mezcla se construya alrededor de eso.",
     add: "Agregar un tubo…",
     note: "La receta queda obligada a mantener cada tubo fijado en una proporción significativa (≥2%). El match % refleja honestamente la mezcla restringida — una fijación dura puede costar algo de exactitud.",
+  },
+  excluded: {
+    title: "Tubos excluidos",
+    hint: "Dejá tubos específicos FUERA de todas las sugerencias — p. ej. excluí el negro para que las mezclas lleguen a oscuros y grises de forma cromática. Los tubos excluidos se ignoran en recetas, coach y variaciones.",
+    add: "Excluir un tubo…",
+    note: "Los tubos excluidos nunca se usan en las sugerencias. El match % refleja la paleta más chica — excluir un tubo fuerte (como el negro) puede costar algo de exactitud en neutros muy oscuros.",
   },
   manual: {
     title: "Manual de usuario (PDF)",

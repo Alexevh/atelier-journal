@@ -22,6 +22,7 @@ import { HarmoniesView } from "./HarmoniesView";
 import { ColorStringView } from "./ColorStringView";
 import { GamutMap } from "./GamutMap";
 import { RequiredTubesPicker } from "./RequiredTubesPicker";
+import { ExcludedTubesPicker } from "./ExcludedTubesPicker";
 import { PaletteChipSelect } from "./PaletteChipSelect";
 
 // Shared results for a target color: big swatch, mix recipe, painter analysis
@@ -36,10 +37,15 @@ export function ResultPanel({
   palettes,
   activeId,
   onSelectPalette,
+  poolPigments,
 }: {
   rgb: RGB;
   pigments: Pigment[];
   onPick: (rgb: RGB) => void;
+  // The full ENABLED palette (before excluded tubes are removed), so the
+  // excluded-tubes picker can offer every tube and show excluded pills. Falls
+  // back to `pigments` when not provided.
+  poolPigments?: Pigment[];
   // `stack` renders everything in a single column (for the Image tab, where the
   // panel lives in a half-width column beside the photo).
   stack?: boolean;
@@ -138,6 +144,9 @@ export function ResultPanel({
         {/* Optional must-use tubes: dropdown + removable pills; the engine is
             forced to keep each selected tube at a meaningful share. */}
         <RequiredTubesPicker pigments={pigments} />
+        {/* Optional excluded tubes: keep specific tubes out of every suggestion
+            (e.g. black) so mixes stay chromatic. */}
+        <ExcludedTubesPicker allPigments={poolPigments ?? pigments} />
         <RecipeView recipe={recipe} target={rgb} paletteName={activeName} />
         {recipe.match < REACH_THRESHOLD && (
           <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-muted-foreground">

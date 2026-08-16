@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { rgbToHex } from "@/lib/color";
 import { usePalettes } from "@/hooks/usePalettes";
+import { useExcludedTubes } from "@/hooks/useExcludedTubes";
 import { useTargetColor, setTargetColor } from "@/hooks/useTargetColor";
 import { useCalibration } from "@/hooks/useCalibration";
 import { useCalibratedEngine } from "@/hooks/useCalibratedEngine";
@@ -73,13 +74,18 @@ export default function PigmentApp({
     () => pigments.filter(isEnabled),
     [pigments]
   );
-  const effectivePigments = useMemo(
-    () =>
-      engineOn
-        ? applyCalibration(enabledPigments, cal.calibration!)
-        : enabledPigments,
-    [engineOn, cal.calibration, enabledPigments]
-  );
+  // Opt-in excluded tubes are kept out of EVERY suggestion (recipe, coach,
+  // variations…). Guard against excluding the whole palette — that would zero
+  // out suggestions — by ignoring the exclusions if nothing would remain.
+  const excludedTubes = useExcludedTubes();
+  const effectivePigments = useMemo(() => {
+    const base = engineOn
+      ? applyCalibration(enabledPigments, cal.calibration!)
+      : enabledPigments;
+    if (!excludedTubes.length) return base;
+    const filtered = base.filter((p) => !excludedTubes.includes(p.id));
+    return filtered.length ? filtered : base;
+  }, [engineOn, cal.calibration, enabledPigments, excludedTubes]);
 
   return (
     <div className="min-h-screen">
@@ -168,6 +174,7 @@ export default function PigmentApp({
               <ResultPanel
                 rgb={target}
                 pigments={effectivePigments}
+                poolPigments={enabledPigments}
                 onPick={setTarget}
                 palettes={api.palettes}
                 activeId={api.activeId}
@@ -225,6 +232,7 @@ export default function PigmentApp({
                 <ResultPanel
                   rgb={target}
                   pigments={effectivePigments}
+                  poolPigments={enabledPigments}
                   onPick={setTarget}
                   stack
                   hideAnalysis
