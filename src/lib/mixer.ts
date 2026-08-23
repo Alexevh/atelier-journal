@@ -337,8 +337,22 @@ function makeRng(seed: number) {
 interface Candidate {
   weights: number[];
   rgb: RGB;
-  dE: number;
+  dE: number; // true ΔE2000 (what we report)
+  score: number; // dE + hue-clash tiebreak (what the search minimises)
 }
+
+// How strongly to discourage muting/darkening a colour with a big component of
+// an OPPOSITE-hue saturated pigment (a green or violet chunk in a warm brown) —
+// something painters avoid; they mute with earths/near-complements. It only
+// breaks near-ties: a genuinely needed chromatic pigment (blue for a sky) has a
+// hue aligned with the target, so it isn't penalised, and dropping it would
+// cost far more ΔE than this ever adds. Scaled down for near-neutral targets.
+const HUE_CLASH = 0.6;
+// Only pigments whose hue is at least this far from the target's start to clash
+// (dot product below the threshold). Same/adjacent-hue tubes cost nothing, so a
+// chromatic target keeps its right-hue pigments; perpendicular-and-beyond ones
+// (a violet or green muting a warm brown) get discouraged.
+const HUE_CLASH_THRESHOLD = 0.35;
 
 export function generateRecipe(
   target: RGB,
@@ -367,6 +381,42 @@ export function generateRecipe(
     target.r * 65536 + target.g * 256 + target.b + n * 7919
   );
 
+  // Hue-clash tiebreak setup: each pigment's chroma + hue direction, and the
+  // target's. `sat` fades the penalty out for near-neutral targets (where any
+  // hue is fair game to neutralise). A pigment aligned with the target's hue
+  // costs nothing; an opposite-hue saturated one costs in proportion to its
+  // share — so the search prefers muting a brown with earths over a green.
+  const pigChroma = pigments.map((p) => {
+    const l = rgbToLab(p.rgb);
+    return Math.hypot(l.a, l.b);
+  });
+  const pigHue = pigments.map((p) => {
+    const l = rgbToLab(p.rgb);
+    const c = Math.hypot(l.a, l.b) || 1;
+    return [l.a / c, l.b / c] as const;
+  });
+  const tChroma = Math.hypot(targetLab.a, targetLab.b);
+  const tHue: readonly [number, number] =
+    tChroma > 0.001 ? [targetLab.a / tChroma, targetLab.b / tChroma] : [0, 0];
+  const sat = Math.min(1, tChroma / 25);
+  const clashPenalty = (w: number[]): number => {
+    if (sat <= 0 || !HUE_CLASH) return 0;
+    let sum = 0;
+    let pen = 0;
+    for (let i = 0; i < w.length; i++) {
+      if (w[i] <= 0) continue;
+      sum += w[i];
+      const align = pigHue[i][0] * tHue[0] + pigHue[i][1] * tHue[1];
+      // Clash grows once a pigment's hue passes the threshold away from the
+      // target: 0 for aligned/adjacent tubes, rising as it turns perpendicular
+      // (a violet on a warm brown) and opposite (a green). Aligned chromatic
+      // tubes stay free, so a saturated target isn't dulled to cut the penalty.
+      const clash = Math.max(0, HUE_CLASH_THRESHOLD - align);
+      pen += w[i] * pigChroma[i] * clash;
+    }
+    return sum > 0 ? HUE_CLASH * sat * (pen / sum) : 0;
+  };
+
   // Must-use tubes → indices (unknown/disabled ids just drop out). With none,
   // `project` is the identity and the whole search is byte-identical to before.
   const requiredIdx = Array.from(
@@ -390,12 +440,13 @@ export function generateRecipe(
   const evalWeights = (weights: number[]): Candidate => {
     const w = project(weights);
     const rgb = mix(w);
-    return { weights: w, rgb, dE: deltaE2000(rgbToLab(rgb), targetLab) };
+    const dE = deltaE2000(rgbToLab(rgb), targetLab);
+    return { weights: w, rgb, dE, score: dE + clashPenalty(w) };
   };
 
   let best: Candidate | null = null;
   const consider = (c: Candidate) => {
-    if (!best || c.dE < best.dE) best = c;
+    if (!best || c.score < best.score) best = c;
   };
 
   // 1) seed with each single pigment
@@ -403,6 +454,48 @@ export function generateRecipe(
     const w = new Array(n).fill(0);
     w[i] = 1;
     consider(evalWeights(w));
+  }
+
+  // 1b) seed with combinations of the pigments NEAREST the target in colour —
+  // the painterly starting point (earths/ochres for a brown, etc.). Random
+  // restarts undersample big palettes and can settle on a chromatically-odd
+  // local optimum (a green/violet chunk in a brown) that's actually a WORSE
+  // match than the sensible earth mix. Planting good seeds near the answer lets
+  // the hill-climb refine the real optimum instead of missing it. Deterministic
+  // and cheap, and it never draws from `rng`, so the random phase is unchanged.
+  {
+    const near = pigments
+      .map((p, i) => ({ i, d: deltaE2000(rgbToLab(p.rgb), targetLab) }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, Math.min(7, n))
+      .map((x) => x.i);
+    // lightest tube, for tinting toward the target's value
+    let whiteIdx = 0;
+    for (let i = 1; i < n; i++) {
+      if (rgbToLab(pigments[i].rgb).L > rgbToLab(pigments[whiteIdx].rgb).L) whiteIdx = i;
+    }
+    const seed = (idxs: number[], ws: number[]) => {
+      const w = new Array(n).fill(0);
+      idxs.forEach((idx, k) => (w[idx] += ws[k]));
+      const sum = w.reduce((a, b) => a + b, 0);
+      if (sum > 0) consider(evalWeights(w.map((x) => x / sum)));
+    };
+    const ratios: [number, number][] = [[1, 1], [2, 1], [1, 2], [3, 1], [1, 3]];
+    for (let a = 0; a < near.length; a++) {
+      for (const [ra, rb] of ratios) seed([near[a], whiteIdx], [ra, rb]);
+      for (let b = a + 1; b < near.length; b++) {
+        for (const [ra, rb] of ratios) seed([near[a], near[b]], [ra, rb]);
+        seed([near[a], near[b], whiteIdx], [2, 1, 1]);
+        seed([near[a], near[b], whiteIdx], [3, 2, 2]);
+      }
+    }
+    // a few triples among the closest tubes (± white) for muted three-earth mixes
+    for (let a = 0; a < Math.min(4, near.length); a++)
+      for (let b = a + 1; b < Math.min(5, near.length); b++)
+        for (let c = b + 1; c < Math.min(6, near.length); c++) {
+          seed([near[a], near[b], near[c]], [3, 2, 1]);
+          seed([near[a], near[b], near[c], whiteIdx], [3, 2, 1, 2]);
+        }
   }
 
   // 2) random sparse combinations (artists rarely use more than ~4 pigments).
@@ -442,7 +535,7 @@ export function generateRecipe(
     const sum = w.reduce((a, b) => a + b, 0);
     if (sum <= 0) continue;
     const cand = evalWeights(w.map((x) => x / sum));
-    if (cand.dE < current.dE) {
+    if (cand.score < current.score) {
       current = cand;
       consider(cand);
     } else if (isSpectral) {
