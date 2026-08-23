@@ -347,12 +347,19 @@ interface Candidate {
 // breaks near-ties: a genuinely needed chromatic pigment (blue for a sky) has a
 // hue aligned with the target, so it isn't penalised, and dropping it would
 // cost far more ΔE than this ever adds. Scaled down for near-neutral targets.
-const HUE_CLASH = 0.6;
+// Strength of the hue-clash tiebreak. Chroma is normalised (below) so this is a
+// small number of "virtual ΔE": enough to flip a near-tie toward earths, but it
+// can't override a genuinely better match (a violet that's really needed for a
+// blue-violet target stays). Kept modest on purpose — it's a tiebreak, not a law.
+const HUE_CLASH = 6;
 // Only pigments whose hue is at least this far from the target's start to clash
 // (dot product below the threshold). Same/adjacent-hue tubes cost nothing, so a
 // chromatic target keeps its right-hue pigments; perpendicular-and-beyond ones
 // (a violet or green muting a warm brown) get discouraged.
 const HUE_CLASH_THRESHOLD = 0.35;
+// Chroma normaliser: a pigment at/above this chroma counts as "fully saturated"
+// for the clash term, so the penalty stays on the ΔE scale instead of dwarfing it.
+const CHROMA_NORM = 45;
 
 export function generateRecipe(
   target: RGB,
@@ -412,7 +419,8 @@ export function generateRecipe(
       // (a violet on a warm brown) and opposite (a green). Aligned chromatic
       // tubes stay free, so a saturated target isn't dulled to cut the penalty.
       const clash = Math.max(0, HUE_CLASH_THRESHOLD - align);
-      pen += w[i] * pigChroma[i] * clash;
+      const chromaNorm = Math.min(1, pigChroma[i] / CHROMA_NORM);
+      pen += w[i] * clash * chromaNorm;
     }
     return sum > 0 ? HUE_CLASH * sat * (pen / sum) : 0;
   };
@@ -499,11 +507,15 @@ export function generateRecipe(
   }
 
   // 2) random sparse combinations (artists rarely use more than ~4 pigments).
-  // The spectral engine's landscape is bumpier, so give it a larger budget.
-  // The classic path keeps its original numbers exactly (identical output).
+  // Budget auto-scales with palette size: the per-tube term (×n) does the
+  // scaling, so a 32-tube palette (which has ~500× more possible mixes than an
+  // 8-tube one) gets proportionally more attempts. The cap only bounds the
+  // largest palettes. Classic mixing is cheap → high cap; the spectral engine
+  // is far heavier per attempt AND bumpier, so its cap stays lower to keep the
+  // tool responsive. Small palettes (n ≤ 8) are unchanged.
   const isSpectral = engine === "spectral";
   const RESTARTS = Math.min(
-    isSpectral ? 4000 : 2400,
+    isSpectral ? 6000 : 7500,
     (isSpectral ? 500 : 300) * n
   );
   // Cap how many pigments a restart combines. Without a maxColors this equals
