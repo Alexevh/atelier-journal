@@ -2,7 +2,7 @@
 // Removed relative to the original: PwaUpdater, Onboarding, cloud sync,
 // Settings/Help tabs (Atelier owns those concerns). Everything else — tabs,
 // wiring, layout, styling — is the original, untouched.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Pipette,
   Image as ImageIcon,
@@ -20,6 +20,7 @@ import { rgbToHex } from "@/lib/color";
 import { usePalettes } from "@/hooks/usePalettes";
 import { useExcludedTubes } from "@/hooks/useExcludedTubes";
 import { useTargetColor, setTargetColor } from "@/hooks/useTargetColor";
+import { rememberColor } from "@/hooks/useColorMemory";
 import { useCalibration } from "@/hooks/useCalibration";
 import { useCalibratedEngine } from "@/hooks/useCalibratedEngine";
 import { applyCalibration } from "@/lib/calibration";
@@ -46,6 +47,7 @@ import { MixCheckView } from "@/components/MixCheckView";
 import { LogbookView } from "@/components/LogbookView";
 import { ImgLabView } from "@/components/ImgLabView";
 import { SharedPaletteImport } from "@/components/SharedPaletteImport";
+import { CompareColorsCard } from "@/components/CompareColorsCard";
 
 export default function PigmentApp({
   onSetLang,
@@ -86,6 +88,13 @@ export default function PigmentApp({
     const filtered = base.filter((p) => !excludedTubes.includes(p.id));
     return filtered.length ? filtered : base;
   }, [engineOn, cal.calibration, enabledPigments, excludedTubes]);
+
+  // Remember colours you settle on (debounced so dragging a slider collapses to
+  // one entry), so the Compare-colours card can hold the previous pick.
+  useEffect(() => {
+    const id = window.setTimeout(() => rememberColor(target), 1200);
+    return () => window.clearTimeout(id);
+  }, [target]);
 
   return (
     <div className="min-h-screen">
@@ -181,6 +190,7 @@ export default function PigmentApp({
                 onSelectPalette={api.setActiveId}
               />
             </div>
+            <CompareColorsCard pigments={effectivePigments} />
           </TabsContent>
 
           {/* Image: sample colors by clicking */}
@@ -229,6 +239,7 @@ export default function PigmentApp({
                   className="h-44"
                 />
                 <SwatchCompare target={target} pigments={effectivePigments} />
+                <CompareColorsCard pigments={effectivePigments} />
                 <ResultPanel
                   rgb={target}
                   pigments={effectivePigments}
