@@ -41,7 +41,11 @@ export default function TopBar({ onHome, onSettings, onIdeas, onColor, onHelp }:
   const handleImport = async (file: File) => {
     try {
       const text = await readFileAsText(file)
-      const parsed = parseImport(text)
+      // Empty library ⇒ this is a migration/restore into a fresh browser: keep
+      // the original ids so connecting to the same cloud dedupes instead of
+      // duplicating. A populated library ⇒ append as copies (fresh ids).
+      const preserveIds = projects.length === 0 && ideas.length === 0
+      const parsed = parseImport(text, { preserveIds })
       importProjects(parsed.projects)
       if (parsed.ideas.length) importIdeas(parsed.ideas)
       // full-backup extras: settings + colour tool snapshot, when present

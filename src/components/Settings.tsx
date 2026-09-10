@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { useSettings } from '../context/SettingsContext'
 import { useSync } from '../context/SyncContext'
@@ -6,17 +6,22 @@ import { useTheme } from '../context/ThemeContext'
 import { useI18n } from '../i18n/I18nContext'
 import { LANGUAGES, Lang } from '../i18n'
 import { FirebaseConfig } from '../types'
+import { mergeSettings } from '../utils/factory'
+import { applyColorSnapshot } from '../sync/colorData'
+import { findDuplicates, parseSettingsOnly, readFileAsText } from '../utils/transfer'
 import BrushDivider from './BrushDivider'
 import CollapsiblePanel from './CollapsiblePanel'
 import ImageField from './ImageField'
 import {
   IconArrowLeft,
   IconCloud,
+  IconCopy,
   IconDownload,
   IconImage,
   IconPalette,
   IconShield,
   IconTrash,
+  IconUpload,
 } from './Icons'
 
 interface Props {
@@ -66,9 +71,42 @@ export default function Settings({ onBack }: Props) {
   const { settings, updateSettings } = useSettings()
   const { theme, toggle } = useTheme()
   const { lang, setLang } = useI18n()
-  const { clearAllProjects, notify } = useApp()
+  const { projects, ideas, clearAllProjects, deleteProject, deleteIdea, notify } = useApp()
   const sync = useSync()
   const [pasteText, setPasteText] = useState('')
+  const configFileRef = useRef<HTMLInputElement>(null)
+  const [dupScan, setDupScan] = useState<{ total: number } | null>(null)
+
+  const importConfigOnly = async (file: File) => {
+    try {
+      const text = await readFileAsText(file)
+      const { settings: s, colorTool } = parseSettingsOnly(text)
+      if (s) updateSettings(() => mergeSettings(s))
+      if (colorTool) await applyColorSnapshot(colorTool)
+      notify(t('settings.configImported'), 'success')
+    } catch (err) {
+      notify(err instanceof Error ? err.message : t('notify.importError'), 'error')
+    }
+  }
+
+  const removeDuplicates = () => {
+    const scan = findDuplicates(projects, ideas)
+    const total = scan.projectIds.length + scan.ideaIds.length
+    if (total === 0) {
+      notify(t('settings.dedupeNone'), 'info')
+      setDupScan(null)
+      return
+    }
+    // two-step: first click reports the count, second click (confirm) removes.
+    if (!dupScan) {
+      setDupScan({ total })
+      return
+    }
+    scan.projectIds.forEach((id) => deleteProject(id))
+    scan.ideaIds.forEach((id) => deleteIdea(id))
+    notify(t('settings.dedupeDone', { count: total }), 'success')
+    setDupScan(null)
+  }
 
   const cfg = settings.sync.firebaseConfig ?? EMPTY_CONFIG
 
@@ -359,6 +397,54 @@ export default function Settings({ onBack }: Props) {
               </p>
             </CollapsiblePanel>
           </>
+        )}
+      </CollapsiblePanel>
+
+      {/* Maintenance: config-only import + de-duplicate */}
+      <CollapsiblePanel
+        title={t('settings.maintSection')}
+        icon={<IconCopy size={20} />}
+        defaultOpen={false}
+      >
+        <input
+          ref={configFileRef}
+          type="file"
+          accept="application/json,.json"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) importConfigOnly(f)
+            e.target.value = ''
+          }}
+        />
+        <p className="muted" style={{ fontStyle: 'italic', marginTop: 0 }}>
+          {t('settings.configOnlyHint')}
+        </p>
+        <button className="btn" onClick={() => configFileRef.current?.click()}>
+          <IconUpload size={16} /> {t('settings.configOnlyBtn')}
+        </button>
+
+        <BrushDivider />
+
+        <p className="muted" style={{ fontStyle: 'italic' }}>
+          {t('settings.dedupeHint')}
+        </p>
+        {dupScan && (
+          <p style={{ fontWeight: 600 }}>
+            {t('settings.dedupeFound', { count: dupScan.total })}
+          </p>
+        )}
+        <button
+          className={dupScan ? 'btn btn-danger' : 'btn'}
+          onClick={removeDuplicates}
+        >
+          <IconCopy size={16} />{' '}
+          {dupScan ? t('settings.dedupeConfirm', { count: dupScan.total }) : t('settings.dedupeScan')}
+        </button>
+        {dupScan && (
+          <button className="btn btn-ghost btn-sm" onClick={() => setDupScan(null)} style={{ marginLeft: '0.5rem' }}>
+            {t('common.cancel')}
+          </button>
         )}
       </CollapsiblePanel>
 

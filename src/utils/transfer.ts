@@ -86,10 +86,17 @@ export interface ImportResult {
 
 /**
  * Parse an imported JSON file. Accepts single-project and full-library exports.
- * Assigns fresh ids so importing never clobbers existing data, while remapping
- * project↔idea provenance links to the new ids.
+ *
+ * By default assigns fresh ids so importing never clobbers existing data (the
+ * merge/append case), remapping project↔idea provenance links to the new ids.
+ *
+ * With `preserveIds` (used when the local library is EMPTY — a migration/restore
+ * to a fresh browser) the original ids and timestamps are kept verbatim. This is
+ * what makes "export from browser A → import into empty browser B → connect to
+ * the same cloud" NOT duplicate everything: the ids match what's already in the
+ * cloud, so sync recognises them as the same items instead of copies.
  */
-export function parseImport(text: string): ImportResult {
+export function parseImport(text: string, opts: { preserveIds?: boolean } = {}): ImportResult {
   const raw = JSON.parse(text)
   let projects: Project[] = []
   let ideas: Idea[] = []
@@ -105,6 +112,19 @@ export function parseImport(text: string): ImportResult {
     projects = [raw] // bare project object
   } else {
     throw new Error('Unrecognised file format. Expected an Atelier export.')
+  }
+
+  if (opts.preserveIds) {
+    // Faithful restore: keep ids, provenance links and timestamps untouched.
+    return {
+      projects: projects.map((p) => ({ ...p })),
+      ideas: ideas.map((i) => ({ ...i })),
+      settings:
+        raw && typeof raw.settings === 'object' && raw.settings
+          ? (raw.settings as Partial<AppSettings>)
+          : undefined,
+      colorTool: typeof raw?.colorTool === 'string' && raw.colorTool ? raw.colorTool : undefined,
+    }
   }
 
   const now = Date.now()
@@ -141,4 +161,78 @@ export function readFileAsText(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error)
     reader.readAsText(file)
   })
+}
+
+/** Extract ONLY the settings (incl. Firebase config) + colour snapshot from a
+ *  backup, ignoring projects/ideas — for carrying your connection config to a
+ *  new browser without importing (and later duplicating) the data. */
+export function parseSettingsOnly(text: string): {
+  settings?: Partial<AppSettings>
+  colorTool?: string
+} {
+  const raw = JSON.parse(text)
+  const settings =
+    raw && typeof raw.settings === 'object' && raw.settings
+      ? (raw.settings as Partial<AppSettings>)
+      : undefined
+  const colorTool =
+    typeof raw?.colorTool === 'string' && raw.colorTool ? (raw.colorTool as string) : undefined
+  if (!settings && !colorTool) {
+    throw new Error('This file has no settings/configuration to import.')
+  }
+  return { settings, colorTool }
+}
+
+// A content fingerprint that ignores the fields import rewrites (id, updatedAt,
+// provenance links). Two records with the same signature are the same content —
+// exactly the shape of the "imported a backup, then synced" duplicates.
+function signature(obj: Record<string, unknown>, drop: string[]): string {
+  const clone: Record<string, unknown> = { ...obj }
+  for (const k of ['id', 'updatedAt', ...drop]) delete clone[k]
+  return JSON.stringify(clone)
+}
+
+export interface DuplicateScan {
+  projectIds: string[] // ids safe to remove (extras beyond the first of each group)
+  ideaIds: string[]
+  projectGroups: number // how many groups had duplicates
+  ideaGroups: number
+}
+
+/**
+ * Find content-identical duplicates among projects and ideas. Within each group
+ * of identical records the FIRST is kept and the rest are returned for removal.
+ * Safe: the signature includes every meaningful field, so genuinely different
+ * works are never grouped together.
+ */
+export function findDuplicates(projects: Project[], ideas: Idea[]): DuplicateScan {
+  const scan = <T extends { id: string }>(items: T[], drop: string[]) => {
+    const seen = new Set<string>()
+    const remove: string[] = []
+    let groups = 0
+    const counts = new Map<string, number>()
+    for (const it of items) {
+      const sig = signature(it as unknown as Record<string, unknown>, drop)
+      if (seen.has(sig)) {
+        remove.push(it.id)
+        counts.set(sig, (counts.get(sig) ?? 1) + 1)
+      } else {
+        seen.add(sig)
+        counts.set(sig, 1)
+      }
+    }
+    counts.forEach((c) => {
+      if (c > 1) groups += 1
+    })
+    return { remove, groups }
+  }
+
+  const p = scan(projects, ['fromIdeaId'])
+  const i = scan(ideas, ['convertedProjectId'])
+  return {
+    projectIds: p.remove,
+    ideaIds: i.remove,
+    projectGroups: p.groups,
+    ideaGroups: i.groups,
+  }
 }
