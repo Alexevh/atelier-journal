@@ -15,7 +15,7 @@ import {
   clamp255,
   type RGB,
 } from "./color";
-import type { Pigment } from "./pigments";
+import type { Pigment, PigmentRole } from "./pigments";
 import * as spectral from "spectral.js";
 
 // --- single-constant Kubelka-Munk per channel ---
@@ -361,6 +361,135 @@ const HUE_CLASH_THRESHOLD = 0.35;
 // for the clash term, so the penalty stays on the ΔE scale instead of dwarfing it.
 const CHROMA_NORM = 45;
 
+// How well pigment `i` fills a painter ROLE (higher = better; -Infinity = no).
+// Uses the tube's tagged role when present (master palettes), else infers it
+// from the masstone's Lab so it works on any palette.
+function roleFit(lab: ReturnType<typeof rgbToLab>, tagged: PigmentRole | undefined, role: PigmentRole): number {
+  if (tagged) return tagged === role ? 1000 : -Infinity;
+  const L = lab.L;
+  const C = Math.hypot(lab.a, lab.b);
+  let H = (Math.atan2(lab.b, lab.a) * 180) / Math.PI;
+  if (H < 0) H += 360;
+  const warm = H < 95 || H > 330;
+  switch (role) {
+    case "white":
+      return L > 80 ? L : -Infinity;
+    case "yellow":
+      return H >= 40 && H <= 110 && L > 45 ? C + (L - 45) * 0.4 : -Infinity;
+    case "warm-red":
+      return (H < 35 || H > 345) && C > 22 && L < 72 ? C : -Infinity;
+    case "flesh":
+      return L >= 52 && L <= 84 && warm && C >= 10 && C <= 45 ? 40 - Math.abs(L - 68) : -Infinity;
+    case "warm-earth":
+      return L >= 35 && L < 66 && H >= 10 && H <= 70 && C >= 12 ? C + (66 - L) * 0.3 : -Infinity;
+    case "warm-shadow":
+      return L < 54 && H >= 5 && H <= 70 ? 54 - L + C * 0.15 : -Infinity;
+    case "cool-earth":
+      return L < 54 && C < 15 ? 54 - L : -Infinity;
+    case "blue":
+      return H >= 200 && H <= 300 ? C + 10 : -Infinity;
+    case "green":
+      return H >= 110 && H <= 190 ? C : -Infinity;
+    case "dark":
+      return L < 30 && C < 14 ? 30 - L : -Infinity;
+    default:
+      return -Infinity;
+  }
+}
+
+// A term in an archetype: try these roles in order, use the first the palette can
+// fill, at weight `w`. This lets a template degrade gracefully on limited kits.
+interface ArchTerm {
+  roles: PigmentRole[];
+  w: number;
+}
+
+const ARCHETYPES: ArchTerm[][] = [
+  // skin — light
+  [{ roles: ["white"], w: 8 }, { roles: ["flesh", "warm-red"], w: 3 }, { roles: ["yellow"], w: 1 }],
+  // skin — mid
+  [
+    { roles: ["white"], w: 5 },
+    { roles: ["flesh", "warm-red"], w: 3 },
+    { roles: ["yellow"], w: 2 },
+    { roles: ["warm-shadow", "cool-earth"], w: 1 },
+  ],
+  // skin — shadow
+  [
+    { roles: ["flesh", "warm-red"], w: 3 },
+    { roles: ["warm-shadow"], w: 3 },
+    { roles: ["yellow"], w: 1 },
+    { roles: ["blue", "cool-earth"], w: 1 },
+    { roles: ["white"], w: 2 },
+  ],
+  // Zorn-style flesh
+  [
+    { roles: ["white"], w: 6 },
+    { roles: ["yellow", "warm-earth"], w: 2 },
+    { roles: ["warm-red"], w: 1 },
+    { roles: ["dark", "blue"], w: 1 },
+  ],
+  // hair — mid warm
+  [
+    { roles: ["warm-shadow", "warm-earth"], w: 4 },
+    { roles: ["yellow"], w: 2 },
+    { roles: ["warm-red"], w: 1 },
+    { roles: ["white"], w: 1 },
+  ],
+  // hair — dark
+  [
+    { roles: ["dark", "warm-shadow"], w: 3 },
+    { roles: ["warm-shadow", "cool-earth"], w: 3 },
+    { roles: ["warm-red"], w: 1 },
+  ],
+  // cool eye / muted cool
+  [
+    { roles: ["white"], w: 4 },
+    { roles: ["blue"], w: 2 },
+    { roles: ["yellow"], w: 1 },
+    { roles: ["dark"], w: 1 },
+  ],
+];
+
+// Resolve each archetype to palette tube indices and hand the (index,weight)
+// pairs to `emit`, which turns them into a seed candidate.
+function seedArchetypes(
+  pigments: Pigment[],
+  emit: (idxWeights: [number, number][]) => void,
+) {
+  const labs = pigments.map((p) => rgbToLab(p.rgb));
+  const bestForRole = (role: PigmentRole): number => {
+    let bi = -1;
+    let bs = -Infinity;
+    for (let i = 0; i < pigments.length; i++) {
+      const s = roleFit(labs[i], pigments[i].role, role);
+      if (s > bs) {
+        bs = s;
+        bi = i;
+      }
+    }
+    return bs === -Infinity ? -1 : bi;
+  };
+  // memoise role → tube for this palette
+  const roleTube = new Map<PigmentRole, number>();
+  const resolve = (roles: PigmentRole[]): number => {
+    for (const r of roles) {
+      if (!roleTube.has(r)) roleTube.set(r, bestForRole(r));
+      const idx = roleTube.get(r)!;
+      if (idx >= 0) return idx;
+    }
+    return -1;
+  };
+  for (const template of ARCHETYPES) {
+    const pairs: [number, number][] = [];
+    for (const term of template) {
+      const idx = resolve(term.roles);
+      if (idx >= 0) pairs.push([idx, term.w]);
+    }
+    if (pairs.length >= 2) emit(pairs);
+  }
+}
+
 export function generateRecipe(
   target: RGB,
   pigments: Pigment[],
@@ -505,6 +634,24 @@ export function generateRecipe(
           seed([near[a], near[b], near[c], whiteIdx], [3, 2, 1, 2]);
         }
   }
+
+  // 1c) PAINTERLY ARCHETYPE seeds. Painters build flesh/hair from a structure —
+  // a light base + a warm red/flesh + a yellow-earth + a small warm shadow (and
+  // a cool note in the darks) — not four co-equal random tubes. We map those
+  // ROLES to the best tube in this palette (using each tube's tagged role on the
+  // master palettes, or inferring it from colour on any other palette) and seed
+  // those structures. They only ever WIN when they actually match the target, so
+  // this is safe for non-flesh colours; it just gives skin/hair a sensible shape.
+  seedArchetypes(pigments, (idxWeights) => {
+    const w = new Array(n).fill(0);
+    let count = 0;
+    for (const [i, wt] of idxWeights) {
+      if (w[i] === 0 && wt > 0) count += 1;
+      w[i] += wt;
+    }
+    const sum = w.reduce((a, b) => a + b, 0);
+    if (count >= 2 && sum > 0) consider(evalWeights(w.map((x) => x / sum)));
+  });
 
   // 2) random sparse combinations (artists rarely use more than ~4 pigments).
   // Budget auto-scales with palette size: the per-tube term (×n) does the
