@@ -556,6 +556,8 @@ const en: Dict = {
     warn: "Your palette can't fully reach this color.",
     suggest: "Adding {name} could get closer (→ {match}%).",
     noSuggest: "Try adding or editing pigments, or switch palettes.",
+    addToPalette: "Add {name} to the current palette",
+    addToPaletteShort: "Add to palette",
   },
   plan: {
     button: "What tubes do I need?",
@@ -1515,6 +1517,8 @@ const es: Dict = {
     warn: "Tu paleta no llega del todo a este color.",
     suggest: "Agregar {name} podría acercarte (→ {match}%).",
     noSuggest: "Probá agregar o editar pigmentos, o cambiar de paleta.",
+    addToPalette: "Agregar {name} a la paleta actual",
+    addToPaletteShort: "Agregar a la paleta",
   },
   plan: {
     button: "¿Qué tubos necesito?",

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
 import { rgbToHex, type RGB } from "@/lib/color";
 import { generateRecipe, suggestPigment } from "@/lib/mixer";
 import { libraryPigments } from "@/lib/pigments";
@@ -38,10 +38,14 @@ export function ResultPanel({
   activeId,
   onSelectPalette,
   poolPigments,
+  onAddPigment,
 }: {
   rgb: RGB;
   pigments: Pigment[];
   onPick: (rgb: RGB) => void;
+  // Add a suggested library tube (one not in the current palette) to the active
+  // palette in one click, so the mix can reach the target. No-op if omitted.
+  onAddPigment?: (p: Pigment) => void;
   // The full ENABLED palette (before excluded tubes are removed), so the
   // excluded-tubes picker can offer every tube and show excluded pills. Falls
   // back to `pigments` when not provided.
@@ -155,12 +159,29 @@ export function ResultPanel({
               <div className="flex-1">
                 <p>{t("reach.warn")}</p>
                 {suggestion ? (
-                  <p className="mt-0.5">
-                    {t("reach.suggest", {
-                      name: suggestion.pigment.name,
-                      match: suggestion.match,
-                    })}
-                  </p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                    <p>
+                      {t("reach.suggest", {
+                        name: suggestion.pigment.name,
+                        match: suggestion.match,
+                      })}
+                    </p>
+                    {onAddPigment &&
+                      !pigments.some(
+                        (p) => p.name === suggestion.pigment.name
+                      ) && (
+                        <button
+                          onClick={() => onAddPigment(suggestion.pigment)}
+                          className="inline-flex items-center gap-1 rounded-full border border-accent/50 bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent hover:bg-accent/20"
+                          title={t("reach.addToPalette", {
+                            name: suggestion.pigment.name,
+                          })}
+                        >
+                          <Plus className="h-3 w-3" />
+                          {t("reach.addToPaletteShort")}
+                        </button>
+                      )}
+                  </div>
                 ) : (
                   <p className="mt-0.5">{t("reach.noSuggest")}</p>
                 )}

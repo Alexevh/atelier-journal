@@ -185,6 +185,7 @@ export default function PigmentApp({
                 pigments={effectivePigments}
                 poolPigments={enabledPigments}
                 onPick={setTarget}
+                onAddPigment={api.addPigment}
                 palettes={api.palettes}
                 activeId={api.activeId}
                 onSelectPalette={api.setActiveId}
@@ -245,6 +246,7 @@ export default function PigmentApp({
                   pigments={effectivePigments}
                   poolPigments={enabledPigments}
                   onPick={setTarget}
+                  onAddPigment={api.addPigment}
                   stack
                   hideAnalysis
                   hideSwatch
