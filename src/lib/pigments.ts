@@ -20,7 +20,27 @@ export interface Pigment {
   // palettes). Set false to keep a pigment in the palette but exclude it from
   // recipe suggestions — e.g. a tube that ran out.
   enabled?: boolean;
+  // The painter's ROLE this tube plays in a mix (base white, warm yellow, warm
+  // red, cool red, warm earth/shadow, cool earth, blue, dark, green, flesh…).
+  // Populated on the curated master palettes; used to seed painterly recipes.
+  role?: PigmentRole;
 }
+
+// A tube's function in the painter's mixing vocabulary. Master palettes tag each
+// tube so the recipe search can seed painterly structures ("base + warm yellow +
+// red + a touch of dark/cool") regardless of the exact tubes on hand.
+export type PigmentRole =
+  | "white"
+  | "yellow"
+  | "warm-red"
+  | "cool-red"
+  | "warm-earth"
+  | "warm-shadow"
+  | "cool-earth"
+  | "blue"
+  | "green"
+  | "dark"
+  | "flesh";
 
 // A pigment counts as available unless explicitly disabled.
 export function isEnabled(p: Pigment): boolean {
@@ -393,6 +413,152 @@ export function makeCorfixPalette(): Palette {
   };
 }
 
+// ---- Master / famous limited palettes ------------------------------------
+// Curated historical & atelier palettes. Values reuse the informed masstone
+// estimates from the kits above (calibrate to your own tubes for accuracy).
+// Each tube carries its painter ROLE, so later features can seed painterly
+// mixes. White is always included — you can't mix a tint without it, even when
+// the classic "named" palette lists only the colours.
+
+type MasterTube = [
+  id: string,
+  name: string,
+  rgb: RGB,
+  opacity: number,
+  temperature: Temperature,
+  strength: number,
+  role: PigmentRole,
+];
+
+function masterPalette(id: string, name: string, tubes: MasterTube[]): Palette {
+  return {
+    id,
+    name,
+    pigments: tubes.map(([tid, tname, rgb, opacity, temperature, strength, role]) => ({
+      id: tid,
+      name: tname,
+      rgb: { ...rgb },
+      opacity,
+      temperature,
+      strength,
+      role,
+    })),
+  };
+}
+
+const WHITE: MasterTube = ["white", "Titanium White", { r: 248, g: 244, b: 234 }, 1, "cool", 0.55, "white"];
+
+// Anders Zorn's famous 4-colour palette. Ivory Black doubles as a cool blue-grey
+// in tints — the trick that makes it sing for flesh.
+export function makeZornPalette(): Palette {
+  return masterPalette("zorn", "Zorn (4)", [
+    ["zorn-white", "Titanium White", { r: 248, g: 244, b: 234 }, 1, "cool", 0.55, "white"],
+    ["zorn-ochre", "Yellow Ochre", { r: 196, g: 145, b: 56 }, 0.8, "warm", 0.7, "yellow"],
+    ["zorn-vermilion", "Vermilion (Cadmium Red)", { r: 200, g: 50, b: 40 }, 0.9, "warm", 0.85, "warm-red"],
+    ["zorn-black", "Ivory Black", { r: 26, g: 26, b: 25 }, 0.9, "cool", 0.9, "dark"],
+  ]);
+}
+
+// Scott Waddell's portrait/flesh palette.
+const WADDELL_BASE: MasterTube[] = [
+  WHITE,
+  ["wad-black", "Ivory Black", { r: 26, g: 26, b: 25 }, 0.9, "cool", 0.9, "dark"],
+  ["wad-cad-orange", "Cadmium Orange", { r: 226, g: 105, b: 30 }, 0.9, "warm", 0.85, "yellow"],
+  ["wad-pale-rose", "Pale Rose Blush", { r: 224, g: 134, b: 125 }, 0.9, "warm", 0.4, "flesh"],
+  ["wad-raw-umber", "Raw Umber", { r: 52, g: 42, b: 30 }, 0.7, "cool", 0.75, "cool-earth"],
+  ["wad-alizarin", "Alizarin Crimson", { r: 74, g: 16, b: 28 }, 0.4, "cool", 0.9, "cool-red"],
+  ["wad-burnt-umber", "Burnt Umber", { r: 48, g: 31, b: 22 }, 0.75, "warm", 0.8, "warm-shadow"],
+];
+
+export function makeWaddellPalette(): Palette {
+  return masterPalette("waddell", "Scott Waddell (6)", WADDELL_BASE);
+}
+
+// Waddell, limited: drop Cadmium Orange, add Ultramarine for cooler control.
+export function makeWaddellLimitedPalette(): Palette {
+  return masterPalette("waddell-limited", "Waddell Limited (+ Ultramarine)", [
+    WHITE,
+    ["wadl-black", "Ivory Black", { r: 26, g: 26, b: 25 }, 0.9, "cool", 0.9, "dark"],
+    ["wadl-pale-rose", "Pale Rose Blush", { r: 224, g: 134, b: 125 }, 0.9, "warm", 0.4, "flesh"],
+    ["wadl-raw-umber", "Raw Umber", { r: 52, g: 42, b: 30 }, 0.7, "cool", 0.75, "cool-earth"],
+    ["wadl-alizarin", "Alizarin Crimson", { r: 74, g: 16, b: 28 }, 0.4, "cool", 0.9, "cool-red"],
+    ["wadl-burnt-umber", "Burnt Umber", { r: 48, g: 31, b: 22 }, 0.75, "warm", 0.8, "warm-shadow"],
+    ["wadl-ultramarine", "Ultramarine Blue", { r: 24, g: 24, b: 64 }, 0.5, "warm", 0.95, "blue"],
+  ]);
+}
+
+// Waddell, extended: base + Burnt Sienna (warm shadows/lines), Naples, Ultramarine.
+export function makeWaddellExtendedPalette(): Palette {
+  return masterPalette("waddell-extended", "Waddell Extended (9)", [
+    ...WADDELL_BASE,
+    ["wadx-burnt-sienna", "Burnt Sienna", { r: 78, g: 38, b: 30 }, 0.6, "warm", 0.75, "warm-shadow"],
+    ["wadx-naples", "Naples Yellow", { r: 243, g: 222, b: 150 }, 0.85, "warm", 0.6, "yellow"],
+    ["wadx-ultramarine", "Ultramarine Blue", { r: 24, g: 24, b: 64 }, 0.5, "warm", 0.95, "blue"],
+  ]);
+}
+
+// John Singer Sargent — a commonly cited version of his palette.
+export function makeSargentPalette(): Palette {
+  return masterPalette("sargent", "Sargent (10)", [
+    WHITE,
+    ["sar-black", "Ivory Black", { r: 26, g: 26, b: 25 }, 0.9, "cool", 0.9, "dark"],
+    ["sar-viridian", "Viridian", { r: 10, g: 58, b: 48 }, 0.55, "cool", 0.6, "green"],
+    ["sar-cad-yellow", "Cadmium Yellow", { r: 252, g: 205, b: 42 }, 0.8, "warm", 0.7, "yellow"],
+    ["sar-ochre", "Yellow Ochre", { r: 196, g: 145, b: 56 }, 0.8, "warm", 0.7, "warm-earth"],
+    ["sar-light-red", "Light Red (Venetian)", { r: 126, g: 52, b: 42 }, 0.8, "warm", 0.75, "warm-earth"],
+    ["sar-vermilion", "Vermilion", { r: 200, g: 50, b: 40 }, 0.9, "warm", 0.85, "warm-red"],
+    ["sar-rose-madder", "Rose Madder (Alizarin)", { r: 74, g: 16, b: 28 }, 0.4, "cool", 0.9, "cool-red"],
+    ["sar-cobalt", "Cobalt Blue", { r: 40, g: 60, b: 150 }, 0.6, "cool", 0.7, "blue"],
+    ["sar-ultramarine", "French Ultramarine", { r: 28, g: 26, b: 64 }, 0.5, "warm", 0.95, "blue"],
+  ]);
+}
+
+// Velázquez — Spanish Baroque, earth-based with a touch of azurite blue.
+export function makeVelazquezPalette(): Palette {
+  return masterPalette("velazquez", "Velázquez (10)", [
+    WHITE,
+    ["vel-ochre", "Yellow Ochre", { r: 196, g: 145, b: 56 }, 0.8, "warm", 0.7, "yellow"],
+    ["vel-lead-tin", "Lead-tin Yellow (Naples)", { r: 243, g: 222, b: 150 }, 0.85, "warm", 0.6, "yellow"],
+    ["vel-vermilion", "Vermilion", { r: 200, g: 50, b: 40 }, 0.9, "warm", 0.85, "warm-red"],
+    ["vel-madder", "Madder Lake (Alizarin)", { r: 74, g: 16, b: 28 }, 0.4, "cool", 0.9, "cool-red"],
+    ["vel-red-ochre", "Red Ochre (Venetian)", { r: 126, g: 52, b: 42 }, 0.8, "warm", 0.75, "warm-earth"],
+    ["vel-raw-umber", "Raw Umber", { r: 52, g: 42, b: 30 }, 0.7, "cool", 0.75, "cool-earth"],
+    ["vel-burnt-umber", "Burnt Umber", { r: 48, g: 31, b: 22 }, 0.75, "warm", 0.8, "warm-shadow"],
+    ["vel-black", "Bone Black", { r: 26, g: 26, b: 25 }, 0.9, "cool", 0.9, "dark"],
+    ["vel-azurite", "Azurite", { r: 40, g: 80, b: 120 }, 0.7, "cool", 0.7, "blue"],
+  ]);
+}
+
+// Caravaggio — tenebrist earths, deep warm shadows, green earth for flesh.
+export function makeCaravaggioPalette(): Palette {
+  return masterPalette("caravaggio", "Caravaggio (8)", [
+    WHITE,
+    ["car-ochre", "Yellow Ochre", { r: 196, g: 145, b: 56 }, 0.8, "warm", 0.7, "yellow"],
+    ["car-red-ochre", "Red Ochre (Terra Rosa)", { r: 150, g: 77, b: 62 }, 0.8, "warm", 0.7, "warm-earth"],
+    ["car-vermilion", "Vermilion", { r: 200, g: 50, b: 40 }, 0.9, "warm", 0.85, "warm-red"],
+    ["car-green-earth", "Green Earth", { r: 110, g: 120, b: 95 }, 0.6, "cool", 0.5, "green"],
+    ["car-raw-umber", "Raw Umber", { r: 52, g: 42, b: 30 }, 0.7, "cool", 0.75, "cool-earth"],
+    ["car-burnt-umber", "Burnt Umber", { r: 48, g: 31, b: 22 }, 0.75, "warm", 0.8, "warm-shadow"],
+    ["car-black", "Ivory Black", { r: 26, g: 26, b: 25 }, 0.9, "cool", 0.9, "dark"],
+  ]);
+}
+
+// Rembrandt — earth-based with lead-tin yellow, madder and a muted blue.
+export function makeRembrandtPalette(): Palette {
+  return masterPalette("rembrandt", "Rembrandt (10)", [
+    WHITE,
+    ["rem-ochre", "Yellow Ochre", { r: 196, g: 145, b: 56 }, 0.8, "warm", 0.7, "yellow"],
+    ["rem-lead-tin", "Lead-tin Yellow", { r: 243, g: 222, b: 150 }, 0.85, "warm", 0.6, "yellow"],
+    ["rem-vermilion", "Vermilion", { r: 200, g: 50, b: 40 }, 0.9, "warm", 0.85, "warm-red"],
+    ["rem-madder", "Madder Lake", { r: 74, g: 16, b: 28 }, 0.4, "cool", 0.9, "cool-red"],
+    ["rem-red-ochre", "Red Ochre", { r: 126, g: 52, b: 42 }, 0.8, "warm", 0.75, "warm-earth"],
+    ["rem-raw-umber", "Raw Umber", { r: 52, g: 42, b: 30 }, 0.7, "cool", 0.75, "cool-earth"],
+    ["rem-cassel", "Cassel Earth (Van Dyck)", { r: 40, g: 28, b: 22 }, 0.6, "warm", 0.8, "warm-shadow"],
+    ["rem-black", "Bone Black", { r: 26, g: 26, b: 25 }, 0.9, "cool", 0.9, "dark"],
+    ["rem-smalt", "Smalt (blue)", { r: 50, g: 70, b: 110 }, 0.5, "cool", 0.7, "blue"],
+  ]);
+}
+
 // Palettes a painter can spin up from a known kit.
 export const PALETTE_PRESETS: {
   id: string;
@@ -420,6 +586,26 @@ export const PALETTE_PRESETS: {
     libraryHidden: true,
   },
   { id: "corfix", name: "Corfix", make: makeCorfixPalette },
+  // Master / famous limited palettes (their tubes already exist in the library
+  // via the kits above, so keep them out of the cherry-pick list).
+  { id: "zorn", name: "Zorn (4)", make: makeZornPalette, libraryHidden: true },
+  { id: "waddell", name: "Scott Waddell (6)", make: makeWaddellPalette, libraryHidden: true },
+  {
+    id: "waddell-limited",
+    name: "Waddell Limited (+ Ultramarine)",
+    make: makeWaddellLimitedPalette,
+    libraryHidden: true,
+  },
+  {
+    id: "waddell-extended",
+    name: "Waddell Extended (9)",
+    make: makeWaddellExtendedPalette,
+    libraryHidden: true,
+  },
+  { id: "sargent", name: "Sargent (10)", make: makeSargentPalette, libraryHidden: true },
+  { id: "velazquez", name: "Velázquez (10)", make: makeVelazquezPalette, libraryHidden: true },
+  { id: "caravaggio", name: "Caravaggio (8)", make: makeCaravaggioPalette, libraryHidden: true },
+  { id: "rembrandt", name: "Rembrandt (10)", make: makeRembrandtPalette, libraryHidden: true },
 ];
 
 // Every pigment across all presets, tagged with its source — a library to
