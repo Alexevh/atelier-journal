@@ -48,6 +48,8 @@ import { LogbookView } from "@/components/LogbookView";
 import { ImgLabView } from "@/components/ImgLabView";
 import { SharedPaletteImport } from "@/components/SharedPaletteImport";
 import { CompareColorsCard } from "@/components/CompareColorsCard";
+import { PaintingPlanCard } from "@/components/PaintingPlanCard";
+import type { Palette as PaletteData } from "@/lib/pigments";
 
 export default function PigmentApp({
   onSetLang,
@@ -95,6 +97,14 @@ export default function PigmentApp({
     const id = window.setTimeout(() => rememberColor(target), 1200);
     return () => window.clearTimeout(id);
   }, [target]);
+
+  // Switch to a suggested master palette: reuse it if one with that name is
+  // already loaded (avoid piling up duplicates), otherwise add the preset.
+  const usePaletteByName = (make: () => PaletteData, name: string) => {
+    const existing = api.palettes.find((p) => p.name === name);
+    if (existing) api.setActiveId(existing.id);
+    else api.addPreset(make);
+  };
 
   return (
     <div className="min-h-screen">
@@ -191,6 +201,7 @@ export default function PigmentApp({
                 onSelectPalette={api.setActiveId}
               />
             </div>
+            <PaintingPlanCard pigments={effectivePigments} onUsePalette={usePaletteByName} />
             <CompareColorsCard pigments={effectivePigments} />
           </TabsContent>
 

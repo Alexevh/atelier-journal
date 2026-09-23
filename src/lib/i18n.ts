@@ -569,6 +569,17 @@ const en: Dict = {
       "Creates a palette with these pigments and makes it active, so the recipes recompute with them.",
     newPaletteName: "Planned palette",
   },
+  paintPlan: {
+    title: "Painting plan",
+    values: "Value structure",
+    light: "Light",
+    mid: "Midtone",
+    shadow: "Shadow",
+    valuesHint: "Light / mid / shadow of this colour, each with a mix for your palette.",
+    suggestPalette: "Best palette for this colour",
+    bestFor: "Best palettes for this colour:",
+    use: "Use",
+  },
   harmony: {
     title: "Color harmonies",
     complement: "Complement",
@@ -1529,6 +1540,17 @@ const es: Dict = {
     useHint:
       "Crea una paleta con estos pigmentos y la activa, así las recetas se recalculan con ellos.",
     newPaletteName: "Paleta planificada",
+  },
+  paintPlan: {
+    title: "Plan de pintura",
+    values: "Estructura de valores",
+    light: "Luz",
+    mid: "Medio tono",
+    shadow: "Sombra",
+    valuesHint: "Luz / medio / sombra de este color, cada uno con una mezcla para tu paleta.",
+    suggestPalette: "Mejor paleta para este color",
+    bestFor: "Mejores paletas para este color:",
+    use: "Usar",
   },
   harmony: {
     title: "Armonías de color",
