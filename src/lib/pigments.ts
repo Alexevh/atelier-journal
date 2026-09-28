@@ -468,10 +468,12 @@ const WADDELL_BASE: MasterTube[] = [
   ["wad-raw-umber", "Raw Umber", { r: 52, g: 42, b: 30 }, 0.7, "cool", 0.75, "cool-earth"],
   ["wad-alizarin", "Alizarin Crimson", { r: 74, g: 16, b: 28 }, 0.4, "cool", 0.9, "cool-red"],
   ["wad-burnt-umber", "Burnt Umber", { r: 48, g: 31, b: 22 }, 0.75, "warm", 0.8, "warm-shadow"],
+  ["wad-naples", "Naples Yellow", { r: 243, g: 222, b: 150 }, 0.85, "warm", 0.6, "yellow"],
+  ["wad-cerulean", "Cerulean Blue", { r: 44, g: 117, b: 170 }, 0.85, "cool", 0.6, "blue"],
 ];
 
 export function makeWaddellPalette(): Palette {
-  return masterPalette("waddell", "Scott Waddell (6)", WADDELL_BASE);
+  return masterPalette("waddell", "Scott Waddell (8)", WADDELL_BASE);
 }
 
 // Waddell, limited: drop Cadmium Orange, add Ultramarine for cooler control.
@@ -487,12 +489,11 @@ export function makeWaddellLimitedPalette(): Palette {
   ]);
 }
 
-// Waddell, extended: base + Burnt Sienna (warm shadows/lines), Naples, Ultramarine.
+// Waddell, extended: base + Burnt Sienna (warm shadows/lines) + Ultramarine.
 export function makeWaddellExtendedPalette(): Palette {
-  return masterPalette("waddell-extended", "Waddell Extended (9)", [
+  return masterPalette("waddell-extended", "Waddell Extended (10)", [
     ...WADDELL_BASE,
     ["wadx-burnt-sienna", "Burnt Sienna", { r: 78, g: 38, b: 30 }, 0.6, "warm", 0.75, "warm-shadow"],
-    ["wadx-naples", "Naples Yellow", { r: 243, g: 222, b: 150 }, 0.85, "warm", 0.6, "yellow"],
     ["wadx-ultramarine", "Ultramarine Blue", { r: 24, g: 24, b: 64 }, 0.5, "warm", 0.95, "blue"],
   ]);
 }
@@ -589,7 +590,7 @@ export const PALETTE_PRESETS: {
   // Master / famous limited palettes (their tubes already exist in the library
   // via the kits above, so keep them out of the cherry-pick list).
   { id: "zorn", name: "Zorn (4)", make: makeZornPalette, libraryHidden: true },
-  { id: "waddell", name: "Scott Waddell (6)", make: makeWaddellPalette, libraryHidden: true },
+  { id: "waddell", name: "Scott Waddell (8)", make: makeWaddellPalette, libraryHidden: true },
   {
     id: "waddell-limited",
     name: "Waddell Limited (+ Ultramarine)",
@@ -598,7 +599,7 @@ export const PALETTE_PRESETS: {
   },
   {
     id: "waddell-extended",
-    name: "Waddell Extended (9)",
+    name: "Waddell Extended (10)",
     make: makeWaddellExtendedPalette,
     libraryHidden: true,
   },
