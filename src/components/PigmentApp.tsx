@@ -15,6 +15,7 @@ import {
   NotebookPen,
   Wand2,
   Aperture,
+  Contrast,
 } from "lucide-react";
 import { rgbToHex } from "@/lib/color";
 import { usePalettes } from "@/hooks/usePalettes";
@@ -49,6 +50,7 @@ import { ImgLabView } from "@/components/ImgLabView";
 import { SharedPaletteImport } from "@/components/SharedPaletteImport";
 import { CompareColorsCard } from "@/components/CompareColorsCard";
 import { PaintingPlanCard } from "@/components/PaintingPlanCard";
+import { LiveValueView } from "@/components/LiveValueView";
 import type { Palette as PaletteData } from "@/lib/pigments";
 
 export default function PigmentApp({
@@ -169,6 +171,7 @@ export default function PigmentApp({
                 { value: "coach", label: t("tabs.coach"), icon: GraduationCap },
                 { value: "compare", label: t("tabs.compare"), icon: GitCompare },
                 { value: "mix", label: t("tabs.mix"), icon: Beaker },
+                { value: "livevalue", label: t("tabs.liveValue"), icon: Contrast },
                 { value: "logbook", label: t("tabs.logbook"), icon: NotebookPen },
                 { value: "imglab", label: t("tabs.imglab"), icon: Wand2 },
                 { value: "calibrate", label: t("tabs.calibrate"), icon: FlaskConical },
@@ -321,6 +324,11 @@ export default function PigmentApp({
           </TabsContent>
 
           {/* Mix: reference color vs a photo of the palette mix */}
+          {/* Live value: reference vs camera, both as pure value */}
+          <TabsContent value="livevalue">
+            <LiveValueView />
+          </TabsContent>
+
           <TabsContent value="mix">
             <MixCheckView pigments={effectivePigments} />
           </TabsContent>
