@@ -80,7 +80,13 @@ const CARD_L: Record<CardKind, number> = { grey: 50, white: 95 };
 
 export function LiveValueView() {
   const { t } = useT();
-  const { blob, save } = useActiveImage("value.reference");
+  // Own reference if the painter set one here; otherwise fall back to the
+  // photo already loaded in the Image tab, so the tab opens ready to use.
+  const own = useActiveImage("value.reference");
+  const fromImageTab = useActiveImage("image.reference");
+  const blob = own.blob ?? fromImageTab.blob;
+  const save = own.save;
+  const usingImageTab = !own.blob && !!fromImageTab.blob;
   const fileRef = useRef<HTMLInputElement>(null);
 
   // reference
@@ -272,6 +278,11 @@ export function LiveValueView() {
                     className="pointer-events-none absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent shadow"
                     style={{ left: `${refPt.x * 100}%`, top: `${refPt.y * 100}%` }}
                   />
+                )}
+                {usingImageTab && (
+                  <p className="mt-2 text-[11px] italic text-muted-foreground">
+                    {t("liveValue.fromImageTab")}
+                  </p>
                 )}
                 <p className="mt-2 text-xs text-muted-foreground">
                   {refL == null
