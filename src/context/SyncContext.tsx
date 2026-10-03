@@ -21,6 +21,7 @@ import {
 import { computeMerge, sameEntities, Syncable } from '../sync/merge'
 import {
   applyColorSnapshot,
+  colorFingerprint,
   getColorLocalMeta,
   setColorLocalMeta,
   snapshotColorData,
@@ -313,6 +314,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
   // ---- colour tool snapshot channel (LWW) --------------------------------
   const colorSyncingRef = useRef(false)
+  // fingerprint of the local colour state at the last full sync (session-only)
+  const colorFpRef = useRef<string | null>(null)
   const [colorVersion, setColorVersion] = useState(0)
 
   const syncColor = useCallback(async (fb: Fb) => {
@@ -326,14 +329,28 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         setError(`color-img: ${e instanceof Error ? e.message : String(e)}`)
       }
-      const snap = await snapshotColorData()
+      // Cheap check first: building the full snapshot converts every logbook
+      // photo to base64 (many MB) — doing that every tick exhausted memory on
+      // phones/tablets and Chrome killed the tab. Skip it unless something
+      // actually changed locally or in the cloud.
       const local = getColorLocalMeta()
+      const remote = await fb.pullColorMeta()
+      const fp = await colorFingerprint()
+      if (
+        fp === colorFpRef.current &&
+        local.everSynced &&
+        (!remote || remote.hash === local.hash)
+      ) {
+        return
+      }
+
+      const snap = await snapshotColorData()
       // stamp a fresh local timestamp only when the local state changed
       const localTs = snap.hash !== local.hash ? Date.now() : local.updatedAt
-      const remote = await fb.pullColorMeta()
 
       if (remote && remote.hash === snap.hash) {
         setColorLocalMeta(Math.max(localTs, remote.updatedAt), snap.hash)
+        colorFpRef.current = fp
         return
       }
       // remote wins on a device that never synced colour data (pull-on-first-
@@ -344,12 +361,14 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           await applyColorSnapshot(dl.payload)
           setColorLocalMeta(dl.meta.updatedAt, dl.meta.hash)
           setColorVersion((v) => v + 1)
+          colorFpRef.current = await colorFingerprint()
         }
         return
       }
       // local wins (or nothing remote yet): upload the snapshot
       await fb.uploadColorData(snap.payload, localTs, snap.hash)
       setColorLocalMeta(localTs, snap.hash)
+      colorFpRef.current = fp
     } finally {
       colorSyncingRef.current = false
     }
@@ -368,7 +387,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-    const iv = window.setInterval(tick, 20_000)
+    const iv = window.setInterval(tick, 45_000)
     window.addEventListener('focus', tick)
     // Push a freshly captured/cleared active image promptly (debounced so a
     // burst of slot writes — or a cloud pull's own events — coalesce).

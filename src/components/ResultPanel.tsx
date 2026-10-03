@@ -11,6 +11,7 @@ import {
   useGoldenRatio,
 } from "@/hooks/useRecipeLimits";
 import { useRequiredTubes } from "@/hooks/useRequiredTubes";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useT } from "@/lib/i18n";
 import type { Pigment } from "@/lib/pigments";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,15 +79,17 @@ export function ResultPanel({
     () => requiredTubes.filter((id) => pigments.some((p) => p.id === id)),
     [requiredTubes, pigments]
   );
+  // Heavy search runs on the settled colour, not every slider tick.
+  const rgbSettled = useDebouncedValue(rgb, 200);
   const recipe = useMemo(
     () =>
-      generateRecipe(rgb, pigments, mode, engine, {
+      generateRecipe(rgbSettled, pigments, mode, engine, {
         maxColors,
         valuePriority,
         goldenRatio,
         requiredIds,
       }),
-    [rgb, pigments, mode, engine, maxColors, valuePriority, goldenRatio, requiredIds]
+    [rgbSettled, pigments, mode, engine, maxColors, valuePriority, goldenRatio, requiredIds]
   );
 
   // When the match is poor, the palette probably can't reach this color. Offer
@@ -107,8 +110,8 @@ export function ResultPanel({
     () =>
       recipe.match >= REACH_THRESHOLD
         ? null
-        : suggestPigment(rgb, pigments, candidates, recipe.deltaE),
-    [rgb, pigments, candidates, recipe.match, recipe.deltaE]
+        : suggestPigment(rgbSettled, pigments, candidates, recipe.deltaE),
+    [rgbSettled, pigments, candidates, recipe.match, recipe.deltaE]
   );
 
   const swatch = (

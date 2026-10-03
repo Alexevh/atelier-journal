@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
 // hold the phone over the palette and see whether the puddle matches the value
 // of the spot they picked on the reference. Everything runs locally.
 
-const PROC_W = 480; // processing width for the camera frames (keeps it smooth)
+const PROC_W = 360; // processing width for the camera frames (keeps it light)
+const FRAME_MS = 80; // process at most ~12 frames/s — plenty for a value check
 const MATCH_TOL = 3; // |ΔL*| within this reads as "on value"
 
 // sRGB 0..255 → relative luminance Y (0..1)
@@ -19,8 +20,12 @@ function lin(c: number): number {
   const v = c / 255;
   return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
 }
+// Precomputed sRGB→linear table: per-pixel work becomes 3 lookups, not 3 pow()s
+// (the camera processes ~150k pixels per frame — this matters on phones).
+const LIN = new Float32Array(256);
+for (let i = 0; i < 256; i++) LIN[i] = lin(i);
 function lumY(r: number, g: number, b: number): number {
-  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return 0.2126 * LIN[r] + 0.7152 * LIN[g] + 0.0722 * LIN[b];
 }
 function yToL(y: number): number {
   return y > 0.008856 ? 116 * Math.cbrt(y) - 16 : 903.3 * y;
@@ -42,13 +47,31 @@ function quantL(L: number, steps: number): number {
   return ((i + 0.5) / steps) * 100;
 }
 
+// Luminance (0..1, 4096 buckets) → displayed grey byte, for a given step count.
+// Built once per step setting, so the per-pixel loop has no cbrt/pow at all.
+const OUT_N = 4096;
+const outTables = new Map<number, Uint8Array>();
+function outTable(steps: number): Uint8Array {
+  let t = outTables.get(steps);
+  if (!t) {
+    t = new Uint8Array(OUT_N);
+    for (let k = 0; k < OUT_N; k++) {
+      t[k] = yToByte(lToY(quantL(yToL(k / (OUT_N - 1)), steps)));
+    }
+    outTables.set(steps, t);
+  }
+  return t;
+}
+
 // Render an RGBA buffer to value-grey in place; `gain` scales luminance (the
 // grey/white-card correction for the camera's auto-exposure). Returns nothing.
 function toValue(data: Uint8ClampedArray, steps: number, gain = 1) {
+  const out = outTable(steps);
+  const top = OUT_N - 1;
   for (let i = 0; i < data.length; i += 4) {
-    const y = Math.min(1, lumY(data[i], data[i + 1], data[i + 2]) * gain);
-    const L = quantL(yToL(y), steps);
-    const g = yToByte(lToY(L));
+    let y = (0.2126 * LIN[data[i]] + 0.7152 * LIN[data[i + 1]] + 0.0722 * LIN[data[i + 2]]) * gain;
+    if (y > 1) y = 1;
+    const g = out[(y * top) | 0];
     data[i] = data[i + 1] = data[i + 2] = g;
   }
 }
@@ -192,14 +215,20 @@ export function LiveValueView() {
         const v = videoRef.current!;
         v.srcObject = stream;
         await v.play().catch(() => {});
-        const tick = () => {
+        let last = 0;
+        let shownL = -1;
+        const tick = (now: number = 0) => {
           if (cancelled) return;
           const cv = camCanvas.current;
-          if (cv && v.videoWidth && !frozenRef.current) {
+          if (cv && v.videoWidth && !frozenRef.current && now - last >= FRAME_MS) {
+            last = now;
             const w = PROC_W;
             const h = Math.round((v.videoHeight / v.videoWidth) * w);
-            cv.width = w;
-            cv.height = h;
+            // resizing a canvas reallocates its backing store — only when needed
+            if (cv.width !== w || cv.height !== h) {
+              cv.width = w;
+              cv.height = h;
+            }
             const ctx = cv.getContext("2d", { willReadFrequently: true })!;
             ctx.drawImage(v, 0, 0, w, h);
             const frame = ctx.getImageData(0, 0, w, h);
@@ -207,13 +236,18 @@ export function LiveValueView() {
             const cx = Math.round(w / 2);
             const cy = Math.round(h / 2);
             lastRawCenter.current = lToY(sampleL(frame.data, w, h, cx, cy, r, 1));
-            setLiveL(sampleL(frame.data, w, h, cx, cy, r, gainRef.current));
+            const L = sampleL(frame.data, w, h, cx, cy, r, gainRef.current);
+            // only re-render when the reading actually changes
+            if (Math.round(L) !== shownL) {
+              shownL = Math.round(L);
+              setLiveL(L);
+            }
             toValue(frame.data, stepsRef.current, gainRef.current);
             ctx.putImageData(frame, 0, 0);
           }
           raf = requestAnimationFrame(tick);
         };
-        tick();
+        raf = requestAnimationFrame(tick);
       } catch (e) {
         if (cancelled) return;
         const name = (e as { name?: string })?.name;

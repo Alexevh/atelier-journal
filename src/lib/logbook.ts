@@ -231,6 +231,19 @@ interface ExportShape {
 
 // Whole logbook → one JSON string. With includeImages=false the photos are
 // dropped (used for cloud sync, to keep the document small / text-only).
+// Cheap change stamp: ids + timestamps only (photos stay as Blob handles, never
+// converted). Lets the cloud sync skip rebuilding the heavy base64 export when
+// nothing in the logbook changed.
+export async function logbookStamp(): Promise<string> {
+  const [projects, entries] = await Promise.all([getProjects(), getAllEntries()]);
+  return [
+    ...projects.map((p) => `p${p.id}:${p.updatedAt}`),
+    ...entries.map((e) => `e${e.id}:${e.updatedAt}`),
+  ]
+    .sort()
+    .join("|");
+}
+
 export async function exportLogbook(includeImages = true): Promise<string> {
   const [projects, entries] = await Promise.all([
     getProjects(),

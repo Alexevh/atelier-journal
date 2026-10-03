@@ -6,7 +6,7 @@
 // one more channel, with last-write-wins semantics. This keeps the ported
 // code verbatim while making Atelier's cloud the durable home for the data.
 
-import { exportLogbook, importLogbook, clearAll } from '../lib/logbook'
+import { exportLogbook, importLogbook, clearAll, logbookStamp } from '../lib/logbook'
 
 const PREFIX = 'pigment-match.'
 // Language is bridged live from Atelier; a stale snapshot must not fight it.
@@ -59,6 +59,22 @@ export async function snapshotColorData(): Promise<ColorSnapshot> {
     })
   const payload = JSON.stringify({ v: 1, keys: sorted, logbook })
   return { payload, hash: hash(payload) }
+}
+
+/** Lightweight fingerprint of the colour-tool state — no photo conversion. */
+export async function colorFingerprint(): Promise<string> {
+  const keys = readKeys()
+  const keyStr = Object.keys(keys)
+    .sort()
+    .map((k) => `${k}=${keys[k]}`)
+    .join('|')
+  let lb = ''
+  try {
+    lb = await logbookStamp()
+  } catch {
+    /* logbook unavailable */
+  }
+  return hash(keyStr + '#' + lb)
 }
 
 export interface ColorLocalMeta {

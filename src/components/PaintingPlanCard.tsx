@@ -7,6 +7,7 @@ import { useT } from "@/lib/i18n";
 import { useTargetColor } from "@/hooks/useTargetColor";
 import { useMixEngine } from "@/hooks/useMixEngine";
 import { useRecipeMode } from "@/hooks/useRecipeMode";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -46,7 +47,8 @@ export function PaintingPlanCard({
   onUsePalette: (make: () => Palette, name: string) => void;
 }) {
   const { t } = useT();
-  const target = useTargetColor();
+  // three recipe searches per colour — run them on the settled colour only
+  const target = useDebouncedValue(useTargetColor(), 300);
   const engine = useMixEngine();
   const mode = useRecipeMode();
   const [ranking, setRanking] = useState<{ name: string; match: number; make: () => Palette }[] | null>(null);
