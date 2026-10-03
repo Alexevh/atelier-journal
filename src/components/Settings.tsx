@@ -9,6 +9,8 @@ import { FirebaseConfig } from '../types'
 import { mergeSettings } from '../utils/factory'
 import { applyColorSnapshot } from '../sync/colorData'
 import { findDuplicates, parseSettingsOnly, readFileAsText } from '../utils/transfer'
+import { clearErrorLog, formatReport, getErrorLog } from '../utils/diagnostics'
+import { APP_VERSION } from '../version'
 import BrushDivider from './BrushDivider'
 import CollapsiblePanel from './CollapsiblePanel'
 import ImageField from './ImageField'
@@ -76,6 +78,17 @@ export default function Settings({ onBack }: Props) {
   const [pasteText, setPasteText] = useState('')
   const configFileRef = useRef<HTMLInputElement>(null)
   const [dupScan, setDupScan] = useState<{ total: number } | null>(null)
+  const [errLog, setErrLog] = useState(() => getErrorLog())
+  const [reportCopied, setReportCopied] = useState(false)
+  const copyReport = async () => {
+    const text = formatReport()
+    try {
+      await navigator.clipboard.writeText(text)
+      setReportCopied(true)
+    } catch {
+      window.prompt(t('error.copyFallback'), text)
+    }
+  }
 
   const importConfigOnly = async (file: File) => {
     try {
@@ -398,6 +411,44 @@ export default function Settings({ onBack }: Props) {
             </CollapsiblePanel>
           </>
         )}
+      </CollapsiblePanel>
+
+      {/* Diagnostics: caught errors + crash report to share */}
+      <CollapsiblePanel title={t('diag.section')} icon={<IconShield size={20} />} defaultOpen={false}>
+        <p className="muted" style={{ fontStyle: 'italic', marginTop: 0 }}>
+          {t('diag.hint', { version: APP_VERSION })}
+        </p>
+        {errLog.length === 0 ? (
+          <p className="muted">{t('diag.empty')}</p>
+        ) : (
+          <ul style={{ paddingLeft: '1.1rem', fontSize: '0.85rem', maxHeight: 220, overflow: 'auto' }}>
+            {errLog.map((e) => (
+              <li key={e.t + e.message} style={{ marginBottom: '0.35rem' }}>
+                <span className="muted">
+                  {new Date(e.t).toLocaleString()} · {e.kind} · {e.where} · v{e.version}
+                </span>
+                <br />
+                {e.message}
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="row wrap" style={{ gap: '0.5rem' }}>
+          <button className="btn" onClick={copyReport}>
+            <IconCopy size={16} /> {reportCopied ? t('error.copied') : t('diag.copy')}
+          </button>
+          {errLog.length > 0 && (
+            <button
+              className="btn btn-ghost"
+              onClick={() => {
+                clearErrorLog()
+                setErrLog([])
+              }}
+            >
+              {t('diag.clear')}
+            </button>
+          )}
+        </div>
       </CollapsiblePanel>
 
       {/* Maintenance: config-only import + de-duplicate */}

@@ -11,6 +11,8 @@ import IdeaEditor from './components/IdeaEditor'
 import ColorPage from './components/ColorPage'
 import HelpPage from './components/HelpPage'
 import { IconClose } from './components/Icons'
+import ErrorBoundary from './components/ErrorBoundary'
+import CrashNotice from './components/CrashNotice'
 
 type Route =
   | { kind: 'gallery' }
@@ -88,11 +90,16 @@ export default function App() {
   }
 
   const activeProject = route.kind === 'work' ? getProject(route.id) : undefined
+  const routeKey = route.kind + ('id' in route ? `:${route.id}` : '')
 
   return (
     <div className="app-shell">
       <TopBar onHome={home} onSettings={openSettings} onIdeas={openIdeas} onColor={openColor} onHelp={openHelp} />
+      <CrashNotice />
       <main className="page">
+        {/* a crash in one screen shows a useful error instead of a blank app;
+            navigating elsewhere resets it */}
+        <ErrorBoundary resetKey={routeKey}>
         {route.kind === 'work' && activeProject ? (
           <ProjectEditor projectId={route.id} onBack={home} />
         ) : route.kind === 'settings' ? (
@@ -108,6 +115,7 @@ export default function App() {
         ) : (
           <Gallery onOpen={open} />
         )}
+        </ErrorBoundary>
       </main>
 
       <div className="toast-stack">

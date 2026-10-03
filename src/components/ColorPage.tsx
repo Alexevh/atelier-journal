@@ -3,6 +3,7 @@ import { useI18n } from '../i18n/I18nContext'
 import { useSync } from '../context/SyncContext'
 import { setLang } from '@/lib/i18n'
 import PigmentApp from './PigmentApp'
+import ErrorBoundary from './ErrorBoundary'
 import { IconArrowLeft } from './Icons'
 
 /**
@@ -26,7 +27,9 @@ export default function ColorPage({ onBack }: { onBack: () => void }) {
       </button>
       {/* key: remount when a remote colour snapshot was applied so palettes,
           logbook and calibration re-read the fresh local state */}
-      <PigmentApp key={colorVersion} onSetLang={(l) => app.setLang(l)} />
+      <ErrorBoundary inline area={app.t('color.open')}>
+        <PigmentApp key={colorVersion} onSetLang={(l) => app.setLang(l)} />
+      </ErrorBoundary>
     </div>
   )
 }

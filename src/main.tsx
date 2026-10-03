@@ -6,13 +6,19 @@ import { ThemeProvider } from './context/ThemeContext'
 import { SettingsProvider } from './context/SettingsContext'
 import { SyncProvider } from './context/SyncContext'
 import { I18nProvider } from './i18n/I18nContext'
+import ErrorBoundary from './components/ErrorBoundary'
+import { installDiagnostics } from './utils/diagnostics'
 import './styles/global.css'
 import './styles/components.css'
 import './styles/editor.css'
 import './styles/pigment.css'
 
+// Log errors + crash breadcrumbs before anything else can fail.
+installDiagnostics()
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <ErrorBoundary>
     <I18nProvider>
       <ThemeProvider>
         <SettingsProvider>
@@ -24,5 +30,6 @@ createRoot(document.getElementById('root')!).render(
         </SettingsProvider>
       </ThemeProvider>
     </I18nProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )

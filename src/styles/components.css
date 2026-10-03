@@ -547,3 +547,17 @@
     opacity: 0;
   }
 }
+
+/* "closed unexpectedly last time" diagnostics banner */
+.crash-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin: 0.75rem clamp(1rem, 4vw, 2.4rem) 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--paper));
+  border-radius: var(--radius);
+  color: var(--ink);
+}

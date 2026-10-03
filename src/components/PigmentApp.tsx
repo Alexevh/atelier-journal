@@ -22,6 +22,7 @@ import { usePalettes } from "@/hooks/usePalettes";
 import { useExcludedTubes } from "@/hooks/useExcludedTubes";
 import { useTargetColor, setTargetColor } from "@/hooks/useTargetColor";
 import { rememberColor } from "@/hooks/useColorMemory";
+import { setBreadcrumb } from "../utils/diagnostics";
 import { useCalibration } from "@/hooks/useCalibration";
 import { useCalibratedEngine } from "@/hooks/useCalibratedEngine";
 import { applyCalibration } from "@/lib/calibration";
@@ -62,6 +63,11 @@ export default function PigmentApp({
   const api = usePalettes();
   const pigments = api.active?.pigments ?? [];
   const [tab, setTab] = useState("match");
+  // name the active tool tab in crash reports
+  useEffect(() => {
+    setBreadcrumb(`#/color · ${tab}`);
+    return () => setBreadcrumb("");
+  }, [tab]);
   // Persisted app-wide target color.
   const target = useTargetColor();
   const setTarget = setTargetColor;
