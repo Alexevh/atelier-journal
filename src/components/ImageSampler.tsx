@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { CameraCapture } from "@/components/CameraCapture";
 import { cn } from "@/lib/utils";
+import { toValueGrey } from "@/lib/valueGrey";
 
 const LOUPE = 132; // px diameter of the magnifier
 const ZOOM = 6; // magnification factor
@@ -148,6 +149,28 @@ export function ImageSampler({
     [wbRef, wbKeepValue]
   );
 
+  // Provisional value view for grisaille work: the canvas itself is converted,
+  // so the eyedropper picks the greys (and the recipe mixes that grey). The
+  // stored photo is untouched - switch back to Colour any time.
+  const [view, setView] = useState<"color" | "grey" | "bw">("color");
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const paint = useCallback((img: HTMLImageElement) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    if (viewRef.current !== "color") {
+      const d = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      toValueGrey(d.data, viewRef.current === "bw" ? 2 : 0);
+      ctx.putImageData(d, 0, 0);
+    }
+  }, []);
+  useEffect(() => {
+    if (imgRef.current) paint(imgRef.current);
+  }, [view, paint]);
+
   const drawFile = useCallback(
     (file: Blob, persist = false) => {
       const url = URL.createObjectURL(file);
@@ -159,8 +182,7 @@ export function ImageSampler({
         const scale = Math.min(1, maxW / img.width);
         canvas.width = Math.round(img.width * scale);
         canvas.height = Math.round(img.height * scale);
-        const ctx = canvas.getContext("2d", { willReadFrequently: true });
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        paint(img);
         imgRef.current = img; // full-res image for a crisp loupe
         setHasImage(true);
         setZoom(1);
@@ -177,7 +199,7 @@ export function ImageSampler({
       // images pass persist=false so we don't re-save (which would loop).
       if (persist) saveSlot(file);
     },
-    [onImage, saveSlot]
+    [onImage, saveSlot, paint]
   );
 
   // Restore (or react to a cloud pull / other-tab update / deletion of) the
@@ -276,6 +298,13 @@ export function ImageSampler({
 
     lctx.imageSmoothingEnabled = false;
     lctx.clearRect(0, 0, LOUPE, LOUPE);
+    // keep the magnifier in the same value view as the canvas
+    lctx.filter =
+      viewRef.current === "grey"
+        ? "grayscale(1)"
+        : viewRef.current === "bw"
+          ? "grayscale(1) contrast(1000%)"
+          : "none";
     lctx.drawImage(
       img,
       ox - region / 2,
@@ -288,6 +317,7 @@ export function ImageSampler({
       LOUPE
     );
 
+    lctx.filter = "none";
     lctx.strokeStyle = "rgba(255,255,255,0.85)";
     lctx.lineWidth = 1;
     lctx.beginPath();
@@ -506,6 +536,17 @@ export function ImageSampler({
               <Plus className="h-4 w-4" />
             </Button>
           </div>
+          <select
+            value={view}
+            onChange={(e) => setView(e.target.value as "color" | "grey" | "bw")}
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+            title={t("image.viewHint")}
+            aria-label={t("image.view")}
+          >
+            <option value="color">{t("image.viewColor")}</option>
+            <option value="grey">{t("image.viewGrey")}</option>
+            <option value="bw">{t("image.viewBw")}</option>
+          </select>
           <div
             className="flex items-center gap-2"
             title={t("image.brushTitle")}

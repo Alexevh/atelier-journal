@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, Pause, Play, SwitchCamera, Upload, Crosshair } from "lucide-react";
+import { Camera, Download, Pause, Play, SwitchCamera, Upload, Crosshair } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useActiveImage } from "@/hooks/useActiveImage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +43,7 @@ function yToByte(y: number): number {
 // Quantise L* into N value steps (0 = off), returning the step-centre L*.
 function quantL(L: number, steps: number): number {
   if (!steps) return L;
+  if (steps === 2) return L < 50 ? 0 : 100; // pure black & white
   const i = Math.min(steps - 1, Math.floor((L / 100) * steps));
   return ((i + 0.5) / steps) * 100;
 }
@@ -131,7 +132,7 @@ export function LiveValueView() {
   frozenRef.current = frozen;
 
   // options
-  const [steps, setSteps] = useState<0 | 5 | 9>(0);
+  const [steps, setSteps] = useState<0 | 2 | 5 | 9>(0);
   const stepsRef = useRef(steps);
   stepsRef.current = steps;
   const [gain, setGain] = useState(1);
@@ -178,6 +179,32 @@ export function LiveValueView() {
   }, [blob, drawRef]);
 
   useEffect(() => drawRef(), [drawRef]);
+
+  // Download the reference as value at full resolution (capped so a huge
+  // photo can't exhaust a phone's memory), using the current step setting.
+  const download = async () => {
+    if (!blob) return;
+    const bmp = await createImageBitmap(blob);
+    const scale = Math.min(1, 3000 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * scale);
+    c.height = Math.round(bmp.height * scale);
+    const ctx = c.getContext("2d")!;
+    ctx.drawImage(bmp, 0, 0, c.width, c.height);
+    bmp.close();
+    const d = ctx.getImageData(0, 0, c.width, c.height);
+    toValue(d.data, steps);
+    ctx.putImageData(d, 0, 0);
+    c.toBlob((out) => {
+      if (!out) return;
+      const url = URL.createObjectURL(out);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = steps === 2 ? "valor-blanco-negro.png" : steps ? `valor-${steps}-pasos.png` : "valor-grises.png";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, "image/png");
+  };
 
   const pickRef = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const px = refPixels.current;
@@ -284,9 +311,16 @@ export function LiveValueView() {
         <Card>
           <CardHeader className="flex-row items-center justify-between">
             <CardTitle>{t("liveValue.reference")}</CardTitle>
+            <div className="flex gap-1.5">
+            {blob && (
+              <Button variant="outline" size="sm" onClick={download}>
+                <Download className="h-4 w-4" /> {t("liveValue.download")}
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
               <Upload className="h-4 w-4" /> {blob ? t("liveValue.replace") : t("liveValue.load")}
             </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <input
@@ -457,10 +491,11 @@ export function LiveValueView() {
               {t("liveValue.steps")}
               <select
                 value={steps}
-                onChange={(e) => setSteps(Number(e.target.value) as 0 | 5 | 9)}
+                onChange={(e) => setSteps(Number(e.target.value) as 0 | 2 | 5 | 9)}
                 className="h-8 rounded-md border border-input bg-background px-2 text-xs"
               >
                 <option value={0}>{t("liveValue.stepsOff")}</option>
+                <option value={2}>{t("liveValue.stepsBw")}</option>
                 <option value={5}>5</option>
                 <option value={9}>9</option>
               </select>
