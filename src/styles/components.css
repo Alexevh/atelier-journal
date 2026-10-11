@@ -60,16 +60,18 @@
 }
 .topbar-version {
   font-family: var(--font-sans, inherit);
-  font-size: 0.6rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 700;
   letter-spacing: 0.02em;
-  color: var(--gold, var(--faint));
-  border: 1px solid color-mix(in srgb, var(--gold, var(--faint)) 45%, transparent);
+  color: var(--paper, #fff);
+  background: var(--accent, #9c4a2f);
   border-radius: 999px;
-  padding: 0.05em 0.45em;
+  padding: 0.15em 0.6em;
   vertical-align: middle;
   position: relative;
-  top: -0.15em;
+  top: -0.12em;
+  margin-left: 0.25em;
+  white-space: nowrap;
 }
 .topbar-sub {
   font-size: 0.62rem;
