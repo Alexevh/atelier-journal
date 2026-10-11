@@ -25,6 +25,7 @@ import { Slider } from "@/components/ui/slider";
 import { CameraCapture } from "@/components/CameraCapture";
 import { cn } from "@/lib/utils";
 import { toValueGrey } from "@/lib/valueGrey";
+import { useGrisailleView, setGrisailleView } from "@/hooks/useGrisaille";
 
 const LOUPE = 132; // px diameter of the magnifier
 const ZOOM = 6; // magnification factor
@@ -152,7 +153,8 @@ export function ImageSampler({
   // Provisional value view for grisaille work: the canvas itself is converted,
   // so the eyedropper picks the greys (and the recipe mixes that grey). The
   // stored photo is untouched - switch back to Colour any time.
-  const [view, setView] = useState<"color" | "grey" | "bw">("color");
+  const view = useGrisailleView();
+  const setView = setGrisailleView;
   const viewRef = useRef(view);
   viewRef.current = view;
   const paint = useCallback((img: HTMLImageElement) => {

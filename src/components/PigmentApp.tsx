@@ -20,6 +20,9 @@ import {
 import { rgbToHex } from "@/lib/color";
 import { usePalettes } from "@/hooks/usePalettes";
 import { useExcludedTubes } from "@/hooks/useExcludedTubes";
+import { useGrisailleView } from "@/hooks/useGrisaille";
+import { rgbToLab } from "@/lib/color";
+import type { Pigment } from "@/lib/pigments";
 import { useTargetColor, setTargetColor } from "@/hooks/useTargetColor";
 import { rememberColor } from "@/hooks/useColorMemory";
 import { setBreadcrumb } from "../utils/diagnostics";
@@ -53,6 +56,27 @@ import { CompareColorsCard } from "@/components/CompareColorsCard";
 import { PaintingPlanCard } from "@/components/PaintingPlanCard";
 import { LiveValueView } from "@/components/LiveValueView";
 import type { Palette as PaletteData } from "@/lib/pigments";
+
+// The palette's white (lightest tube) and black (darkest neutral tube; falls
+// back to the darkest tube if there's no neutral dark). Uses master-palette
+// roles when present.
+function whiteAndBlack(pigs: Pigment[]): Pigment[] {
+  if (pigs.length <= 2) return pigs;
+  const lab = pigs.map((p) => rgbToLab(p.rgb));
+  const byRole = (r: string) => pigs.findIndex((p) => p.role === r);
+  let w = byRole("white");
+  if (w < 0) w = lab.reduce((bi, l, i) => (l.L > lab[bi].L ? i : bi), 0);
+  let k = byRole("dark");
+  if (k < 0) {
+    let best = -1;
+    lab.forEach((l, i) => {
+      if (i !== w && Math.hypot(l.a, l.b) < 20 && (best < 0 || l.L < lab[best].L)) best = i;
+    });
+    if (best < 0) best = lab.reduce((bi, l, i) => (i !== w && (bi < 0 || l.L < lab[bi].L) ? i : bi), -1);
+    k = best;
+  }
+  return k >= 0 && k !== w ? [pigs[w], pigs[k]] : [pigs[w]];
+}
 
 export default function PigmentApp({
   onSetLang,
@@ -90,14 +114,17 @@ export default function PigmentApp({
   // variations…). Guard against excluding the whole palette — that would zero
   // out suggestions — by ignoring the exclusions if nothing would remain.
   const excludedTubes = useExcludedTubes();
+  const grisaille = useGrisailleView();
   const effectivePigments = useMemo(() => {
     const base = engineOn
       ? applyCalibration(enabledPigments, cal.calibration!)
       : enabledPigments;
+    // Grisaille view: mix only from the palette's white and black.
+    if (grisaille !== "color") return whiteAndBlack(base);
     if (!excludedTubes.length) return base;
     const filtered = base.filter((p) => !excludedTubes.includes(p.id));
     return filtered.length ? filtered : base;
-  }, [engineOn, cal.calibration, enabledPigments, excludedTubes]);
+  }, [engineOn, cal.calibration, enabledPigments, excludedTubes, grisaille]);
 
   // Remember colours you settle on (debounced so dragging a slider collapses to
   // one entry), so the Compare-colours card can hold the previous pick.
