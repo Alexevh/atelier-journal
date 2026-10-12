@@ -9,14 +9,18 @@ interface Props {
 }
 
 /**
- * A draggable before/after comparison. The "after" image sets the size; the
- * "before" image overlays it and is clipped up to the handle position, so
- * neither image ever distorts.
+ * A draggable before/after comparison. Both photos are fitted into the SAME
+ * frame (shaped like the final artwork) and scaled to fit — whole, centred,
+ * never stretched — so a reference with different proportions or resolution
+ * lines up with the painting instead of looking cropped or deformed.
  */
 export default function CompareSlider({ before, after, beforeLabel, afterLabel }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState(50)
   const [dragging, setDragging] = useState(false)
+  // frame shape: the final artwork's proportions (stored size, else measured)
+  const [measured, setMeasured] = useState<string | null>(null)
+  const ratio = after.width && after.height ? `${after.width} / ${after.height}` : measured
 
   const moveTo = (clientX: number) => {
     const el = ref.current
@@ -30,6 +34,7 @@ export default function CompareSlider({ before, after, beforeLabel, afterLabel }
     <div
       ref={ref}
       className="compare"
+      style={ratio ? { aspectRatio: ratio } : undefined}
       onPointerDown={(e) => {
         setDragging(true)
         e.currentTarget.setPointerCapture(e.pointerId)
@@ -41,7 +46,16 @@ export default function CompareSlider({ before, after, beforeLabel, afterLabel }
         e.currentTarget.releasePointerCapture(e.pointerId)
       }}
     >
-      <img className="compare-base" src={after.dataUrl} alt={afterLabel || ''} draggable={false} />
+      <img
+        className="compare-base"
+        src={after.dataUrl}
+        alt={afterLabel || ''}
+        draggable={false}
+        onLoad={(e) => {
+          const im = e.currentTarget
+          if (im.naturalWidth && im.naturalHeight) setMeasured(`${im.naturalWidth} / ${im.naturalHeight}`)
+        }}
+      />
       <img
         className="compare-overlay"
         src={before.dataUrl}
